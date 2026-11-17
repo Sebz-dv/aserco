@@ -1,0 +1,185 @@
+/* =====================================================
+   ASERCO SMART FINANCE — CTA SECTION
+   ===================================================== */
+
+/* =========================================*
+
+   CTA*
+
+*========================================= */
+
+
+
+.cta-section {
+
+  width: 100%;
+
+  isolation: isolate;
+
+}
+
+
+
+.cta-shell {
+
+  position: relative;
+
+  width: 100%;
+
+  min-height: 600px;
+
+  background: rgba(255, 255, 255, 0.78);
+
+  border: 1px solid rgba(34, 38, 75, 0.09);
+
+  box-shadow: 0 25px 75px rgba(34, 38, 75, 0.08);
+
+}
+
+
+
+.dark .cta-shell {
+
+  background: rgba(10, 18, 34, 0.82);
+
+  border-color: rgba(255, 255, 255, 0.09);
+
+  box-shadow: 0 25px 75px rgba(0, 0, 0, 0.2);
+
+}
+
+
+
+.cta-gradient-text {
+
+  background: linear-gradient(100deg, #789900 0%, #9dbf14 55%, #3163a2 100%);
+
+  -webkit-background-clip: text;
+
+  background-clip: text;
+
+  -webkit-text-fill-color: transparent;
+
+}
+
+
+
+.dark .cta-gradient-text {
+
+  background: linear-gradient(100deg, #c5e76b 0%, #b5d83d 55%, #75a9e8 100%);
+
+  -webkit-background-clip: text;
+
+  background-clip: text;
+
+  -webkit-text-fill-color: transparent;
+
+}
+
+
+
+.cta-visual {
+
+  width: 100%;
+
+  max-width: 620px;
+
+}
+
+
+
+@media (min-width: 1280px) {
+
+  .cta-shell {
+
+    min-height: 680px;
+
+  }
+
+
+
+  .cta-visual {
+
+    max-width: 620px;
+
+  }
+
+}
+
+
+
+@media (max-width: 1023px) {
+
+  .cta-shell {
+
+    min-height: auto;
+
+  }
+
+
+
+  .cta-visual {
+
+    max-width: 620px;
+
+    margin-inline: auto;
+
+  }
+
+}
+
+
+
+@media (max-width: 640px) {
+
+  .cta-shell {
+
+    border-radius: 26px;
+
+  }
+
+
+
+  .cta-visual {
+
+    max-width: 100%;
+
+  }
+
+
+
+  .ambient-light {
+
+    filter: blur(60px);
+
+  }
+
+
+
+  .ambient-light-one,
+
+  .ambient-light-three {
+
+    left: -240px;
+
+  }
+
+
+
+  .ambient-light-two,
+
+  .ambient-light-four {
+
+    right: -260px;
+
+  }
+
+
+
+  .app-background::before {
+
+    opacity: 0.75;
+
+  }
+
+}

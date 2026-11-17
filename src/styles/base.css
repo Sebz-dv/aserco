@@ -1,0 +1,47 @@
+/* ASERCO SMART FINANCE — base global */
+html {
+  min-height: 100%;
+  scroll-behavior: smooth;
+  scroll-padding-top: var(--scroll-offset);
+  font-family: var(--font-primary);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  color: var(--brand-navy);
+  background-color: var(--brand-surface);
+  color-scheme: light;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  font-family: inherit;
+  font-optical-sizing: auto;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: var(--brand-surface);
+  color: var(--brand-navy);
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+#root {
+  min-height: 100vh;
+}
+img {
+  display: block;
+  max-width: 100%;
+}
+a {
+  text-decoration: none;
+}

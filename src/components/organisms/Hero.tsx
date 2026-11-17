@@ -1,274 +1,670 @@
 import {
-  ArrowDownRight,
   ArrowUpRight,
   Building2,
   ChartNoAxesCombined,
   ShieldCheck,
+  Sparkles,
+  TrendingUp,
 } from "lucide-react";
 
+import { motion, useReducedMotion } from "motion/react";
 import { Button } from "../atoms/Button";
-import type { AuthUser } from "../../lib/api";
 
-const logoAserco = new URL(
-  "../../assets/logos/LogoAserco1.png",
-  import.meta.url,
-).href;
+const benefits = [
+  { icon: ShieldCheck, text: "Acompañamiento experto" },
+  { icon: Building2, text: "Ecosistema financiero" },
+  { icon: ChartNoAxesCombined, text: "Soluciones estratégicas" },
+];
 
-const logoAsercoDark = new URL(
-  "../../assets/logos/logoAsercoDark.png",
-  import.meta.url,
-).href;
+const featureCards = [
+  {
+    icon: Building2,
+    eyebrow: "GESTIÓN INTEGRAL",
+    title: "Gestión 360°",
+    description:
+      "De inicio a seguimiento, centraliza y administra tus procesos financieros.",
+  },
+  {
+    icon: ArrowUpRight,
+    eyebrow: "EXPERIENCIA INTUITIVA",
+    title: "Acceso simple",
+    description:
+      "Rutas claras y procesos intuitivos para que tu empresa avance.",
+  },
+  {
+    icon: TrendingUp,
+    eyebrow: "TECNOLOGÍA E INNOVACIÓN",
+    title: "Crecimiento inteligente",
+    description: "Soluciones estratégicas para impulsar nuevas oportunidades.",
+  },
+];
 
-type Props = Readonly<{
-  user: AuthUser | null;
-}>;
+export function Hero() {
+  const shouldReduceMotion = useReducedMotion();
 
-export function Hero({ user }: Props) {
+  const revealVariants = {
+    hidden: {
+      opacity: 0,
+      y: shouldReduceMotion ? 0 : 25,
+    },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: shouldReduceMotion ? 0 : 0.75,
+        ease: "easeOut" as const,
+      },
+    },
+  };
+
+  const leftContainerVariants = {
+    hidden: {},
+    visible: {
+      transition: {
+        staggerChildren: shouldReduceMotion ? 0 : 0.14,
+        delayChildren: shouldReduceMotion ? 0 : 0.1,
+      },
+    },
+  };
+
+  const cardContainerVariants = {
+    hidden: {},
+    visible: {
+      transition: {
+        staggerChildren: shouldReduceMotion ? 0 : 0.16,
+        delayChildren: shouldReduceMotion ? 0 : 0.15,
+      },
+    },
+  };
+
+  const cardVariants = {
+    hidden: {
+      opacity: 0,
+      x: shouldReduceMotion ? 0 : 25,
+      scale: shouldReduceMotion ? 1 : 0.97,
+    },
+    visible: {
+      opacity: 1,
+      x: 0,
+      scale: 1,
+      transition: {
+        duration: shouldReduceMotion ? 0 : 0.65,
+        ease: "easeOut" as const,
+      },
+    },
+  };
+
   return (
     <section
       id="inicio"
-      data-reveal
-      className="relative isolate overflow-hidden bg-[#f7f8f4] text-[#22264b] transition-colors duration-300 dark:bg-[#050b17] dark:text-white"
+      className="relative isolate overflow-hidden text-[#22264b] transition-colors duration-300 dark:text-white"
     >
-      {/* Fondo */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="decor-orb absolute -right-40 -top-48 size-150 rounded-full border border-[#9dbf14]/20 bg-[#9dbf14]/5 dark:border-[#9dbf14]/45 dark:bg-[#9dbf14]/10" />
-        <div className="decor-ring absolute -right-20 -top-28 size-110 rounded-full border border-[#9dbf14]/15 dark:border-[#9dbf14]/45 dark:bg-[#9dbf14]/5" />
-        <div className="decor-orb absolute -left-40 bottom-0 size-110 rounded-full bg-[#9dbf14]/5 blur-3xl dark:bg-[#9dbf14]/15" />
+      {/* AMBIENTACIÓN */}
 
-        <div className="absolute inset-0 bg-[linear-gradient(#22264b_1px,transparent_1px),linear-gradient(90deg,#22264b_1px,transparent_1px)] bg-size-[52px_52px] opacity-[0.035] dark:opacity-[0.07] dark:bg-[linear-gradient(#ffffff_1px,transparent_1px),linear-gradient(90deg,#ffffff_1px,transparent_1px)]" />
+      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+        <motion.div
+          className="absolute -right-40 -top-32 size-[550px] rounded-full bg-[#9dbf14]/10 blur-[120px] dark:bg-[#9dbf14]/15"
+          animate={
+            shouldReduceMotion
+              ? {}
+              : {
+                  scale: [1, 1.12, 1],
+                  opacity: [0.6, 1, 0.6],
+                  x: [0, -20, 0],
+                }
+          }
+          transition={{
+            duration: 12,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
 
-        <div className="absolute right-[48%] top-1/2 hidden h-px w-40 bg-[#9dbf14]/30 lg:block" />
+        <motion.div
+          className="absolute -bottom-40 left-1/3 size-[450px] rounded-full bg-[#9dbf14]/5 blur-[120px]"
+          animate={
+            shouldReduceMotion
+              ? {}
+              : {
+                  scale: [1, 1.15, 1],
+                  opacity: [0.4, 0.8, 0.4],
+                }
+          }
+          transition={{
+            duration: 10,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: 1,
+          }}
+        />
       </div>
 
-      <div className="relative mx-auto max-w-360 px-5 pb-16 pt-8 sm:px-8 lg:px-12 lg:pb-24 lg:pt-10">
-        {/* Logo */}
-        <header className="relative z-30 mb-4 translate-y-12 lg:translate-y-16">
-          <a
-            href="#inicio"
-            aria-label="Aserco Smart Finance, inicio"
-            className="inline-flex items-center"
+      <div className="mx-auto max-w-[1440px] px-5 pb-16 pt-12 sm:px-8 sm:pb-20 lg:px-12 lg:pt-16">
+        {/* GRID PRINCIPAL */}
+
+        <div className="grid items-start gap-12 lg:grid-cols-[1fr_0.92fr] lg:gap-14 xl:gap-20">
+          {/* COLUMNA IZQUIERDA */}
+
+          <motion.div
+            className="relative z-10 w-full max-w-2xl"
+            variants={leftContainerVariants}
+            initial="hidden"
+            animate="visible"
           >
-            <img
-              src={logoAserco}
-              alt="Aserco Smart Finance"
-              className="hero-logo hero-logo-light"
-            />
+            {/* ETIQUETA */}
 
-            <img
-              src={logoAsercoDark}
-              alt=""
-              aria-hidden="true"
-              className="hero-logo hero-logo-dark"
-            />
-          </a>
-        </header>
+            <motion.div
+              variants={revealVariants}
+              className="mb-7 inline-flex items-center gap-3 rounded-full border border-[#9dbf14]/40 bg-[#9dbf14]/10 px-4 py-2.5 text-[10px] font-bold tracking-[0.19em] text-[#647d0b] dark:text-[#dff090] sm:mb-8 sm:text-[11px]"
+            >
+              <motion.span
+                className="size-2 shrink-0 rounded-full bg-[#9dbf14] shadow-[0_0_12px_#9dbf14]"
+                animate={
+                  shouldReduceMotion
+                    ? {}
+                    : {
+                        scale: [1, 1.35, 1],
+                        opacity: [1, 0.6, 1],
+                      }
+                }
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+              />
+              FINANCIACIÓN INTELIGENTE
+            </motion.div>
 
-        {/* Hero principal */}
-        <div className="grid items-center gap-14 pt-8 lg:grid-cols-[0.95fr_1.05fr] lg:gap-12 lg:pt-0">
-          {/* Columna izquierda */}
-          <div className="relative z-10 max-w-2xl">
-            <div className="mb-8 inline-flex items-center gap-3 rounded-full border border-[#9dbf14]/40 bg-[#9dbf14]/10 px-4 py-2.5 text-[11px] font-bold tracking-[0.19em] text-[#647d0b] dark:text-[#dff090]">
-              <span className="inline-flex items-center gap-3">
-                <span className="size-2 rounded-full bg-[#9dbf14] shadow-[0_0_12px_#9dbf14]" />
-                <span>FINANCIACIÓN INTELIGENTE</span>
-              </span>
-            </div>
+            {/* TÍTULO */}
 
-            {/* Mensaje principal */}
             <div className="relative">
-              <div className="absolute -left-5 top-1 hidden h-24 w-1 rounded-full bg-[#9dbf14] sm:block" />
+              <motion.div
+                className="absolute -left-5 top-1 hidden h-28 w-1 origin-top rounded-full bg-[#9dbf14] sm:block"
+                initial={{
+                  scaleY: shouldReduceMotion ? 1 : 0,
+                }}
+                animate={{ scaleY: 1 }}
+                transition={{
+                  duration: shouldReduceMotion ? 0 : 0.8,
+                  delay: 0.3,
+                  ease: "easeOut",
+                }}
+              />
 
-              <p className="max-w-162.5 text-[30px] font-semibold leading-[1.3] tracking-[-0.045em] text-[#22264b] sm:text-[36px] lg:text-[42px] dark:text-white">
-                Simplificamos el acceso a financiación inteligente para impulsar
-                la{" "}
-                <span className="text-[#789900] dark:text-[#b4d63d]">
-                  liquidez, el crecimiento y la expansión
-                </span>{" "}
+              <motion.h1
+                variants={revealVariants}
+                className="max-w-[650px] text-[30px] font-semibold leading-[1.3] tracking-[-0.045em] text-[#22264b] sm:text-[36px] lg:text-[42px] xl:text-[46px] dark:text-white"
+              >
+                Simplificamos el acceso a financiación inteligente para impulsar{" "}
+                <motion.span className="inline text-[#789900] dark:text-[#b4d63d]">
+                  la liquidez, el crecimiento y la expansión
+                </motion.span>{" "}
                 de tu negocio a través de un ecosistema financiero integral.
+              </motion.h1>
+            </div>
+
+            {/* DESCRIPCIÓN */}
+
+            <motion.p
+              variants={revealVariants}
+              className="mt-6 max-w-[540px] text-[14px] leading-[1.9] text-slate-600 sm:text-[15px] dark:text-slate-400"
+            >
+              Conectamos empresas con soluciones de financiación estructuradas,
+              acompañamiento especializado y herramientas estratégicas para
+              optimizar su liquidez y convertir sus objetivos de negocio en
+              oportunidades de crecimiento.
+            </motion.p>
+
+            {/* BOTONES */}
+
+            <motion.div
+              variants={revealVariants}
+              className="mt-8 flex flex-col gap-3 sm:mt-9 sm:flex-row sm:flex-wrap sm:items-center"
+            >
+              <motion.div
+                whileHover={
+                  shouldReduceMotion
+                    ? {}
+                    : {
+                        y: -4,
+                        scale: 1.025,
+                      }
+                }
+                whileTap={shouldReduceMotion ? {} : { scale: 0.97 }}
+              >
+                <Button href="#contacto" type="button">
+                  Conversemos sobre tu empresa
+                </Button>
+              </motion.div>
+
+              <motion.div
+                whileHover={
+                  shouldReduceMotion
+                    ? {}
+                    : {
+                        y: -4,
+                        scale: 1.025,
+                      }
+                }
+                whileTap={shouldReduceMotion ? {} : { scale: 0.97 }}
+              >
+                <Button
+                  href="#servicios"
+                  type="button"
+                  variant="secondary"
+                  className="border-slate-300 bg-white/60 text-slate-700 hover:bg-white dark:border-white/25 dark:bg-white/5 dark:text-white dark:hover:bg-white/10"
+                >
+                  Ver servicios
+                </Button>
+              </motion.div>
+            </motion.div>
+
+            {/* INDICADORES DE CONFIANZA */}
+
+            <motion.div
+              variants={revealVariants}
+              className="mt-10 border-t border-slate-200 pt-6 dark:border-white/10"
+            >
+              <p className="mb-4 text-[9px] font-bold uppercase tracking-[0.17em] text-slate-400">
+                Nuestro compromiso
               </p>
-            </div>
 
-            {/* Botones */}
-            <div className="mt-10 flex flex-wrap items-center gap-3">
-              {user ? (
-                <div className="rounded-full border border-[#9dbf14]/40 bg-[#9dbf14]/10 px-5 py-3 text-sm font-semibold text-[#647d0b] dark:text-[#dff090]">
-                  Bienvenido, {user.name}
-                </div>
-              ) : (
-                <>
-                  <Button href="#contacto" type="button">
-                    Conversemos sobre tu empresa
-                  </Button>
-
-                  <Button
-                    href="#servicios"
-                    type="button"
-                    variant="secondary"
-                    className="border-slate-300 bg-white/60 text-slate-700 hover:bg-white dark:border-white/25 dark:bg-white/5 dark:text-white dark:hover:bg-white/10"
+              <motion.div
+                className="flex flex-wrap gap-x-6 gap-y-4"
+                variants={cardContainerVariants}
+              >
+                {benefits.map((item) => (
+                  <motion.div
+                    key={item.text}
+                    variants={cardVariants}
+                    className="group flex items-center gap-2.5"
+                    whileHover={
+                      shouldReduceMotion
+                        ? {}
+                        : {
+                            x: 4,
+                          }
+                    }
                   >
-                    Ver servicios
-                  </Button>
-                </>
-              )}
-            </div>
-
-            {/* Beneficios */}
-            <div className="mt-14 grid grid-cols-1 gap-3 sm:grid-cols-3 lg:gap-2">
-              <div className="flex items-center gap-3 border-t border-slate-300/80 py-4 dark:border-white/15">
-                <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-[#9dbf14]/15 text-[#789900] dark:text-[#b4d63d]">
-                  <ShieldCheck size={22} />
-                </span>
-                <span className="text-xs font-semibold leading-5 text-slate-700 dark:text-slate-200">
-                  Acompañamiento experto
-                </span>
-              </div>
-
-              <div className="flex items-center gap-3 border-t border-slate-300/80 py-4 dark:border-white/15">
-                <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-[#9dbf14]/15 text-[#789900] dark:text-[#b4d63d]">
-                  <Building2 size={22} />
-                </span>
-                <span className="text-xs font-semibold leading-5 text-slate-700 dark:text-slate-200">
-                  Ecosistema financiero
-                </span>
-              </div>
-
-              <div className="flex items-center gap-3 border-t border-slate-300/80 py-4 dark:border-white/15">
-                <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-[#9dbf14]/15 text-[#789900] dark:text-[#b4d63d]">
-                  <ShieldCheck size={22} />
-                </span>
-                <span className="text-xs font-semibold leading-5 text-slate-700 dark:text-slate-200">
-                  Aprobación y desembolso ágil
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Composición financiera derecha */}
-          <div className="relative mx-auto w-full max-w-155 lg:ml-auto">
-            <div className="absolute -right-16 -top-16 size-64 rounded-full bg-[#9dbf14]/10 blur-3xl dark:bg-[#9dbf14]/16" />
-            <div className="absolute -bottom-16 -left-16 size-64 rounded-full bg-[#22264b]/10 blur-3xl dark:bg-[#9dbf14]/10" />
-
-            <div className="absolute -right-7 -top-8 size-36 rounded-full border border-[#9dbf14]/30 dark:border-[#9dbf14]/55" />
-            <div className="absolute -right-1 -top-2 size-24 rounded-full border border-[#9dbf14]/20 dark:border-[#9dbf14]/50" />
-
-            <div className="relative space-y-4">
-              {/* Bloque principal */}
-              <div className="relative min-h-62.5 overflow-hidden rounded-[28px] bg-[#22264b] p-7 text-white shadow-2xl shadow-[#22264b]/20 sm:p-10">
-                <div className="absolute -right-14 -top-24 size-72 rounded-full border border-[#9dbf14]/30" />
-                <div className="absolute -right-5 -top-16 size-52 rounded-full border border-[#9dbf14]/20" />
-                <div className="absolute -bottom-28 right-24 size-56 rounded-full border border-white/10" />
-
-                <div className="relative z-10 flex min-h-47.5 flex-col justify-between">
-                  <div className="flex items-center justify-between">
-                    <span className="inline-flex items-center gap-2 rounded-full border border-[#d4e58e]/20 bg-white/5 px-3 py-2 text-[10px] font-bold tracking-[0.22em] text-[#d4e58e] backdrop-blur-sm">
-                      <span className="size-2 rounded-full bg-[#9dbf14]" />
-                      <span>VISIÓN FINANCIERA</span>
-                    </span>
-
-                    <span className="grid size-11 place-items-center rounded-full border border-white/20 bg-white/5 text-[#b4d63d]">
-                      <ChartNoAxesCombined size={23} />
-                    </span>
-                  </div>
-
-                  <div>
-                    <p className="max-w-sm text-3xl font-bold leading-tight tracking-tight sm:text-4xl">
-                      Decisiones con dirección
-                    </p>
-
-                    <div className="mt-6 h-1 w-20 rounded-full bg-[#9dbf14]" />
-                  </div>
-                </div>
-              </div>
-
-              {/* Módulos secundarios */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="group relative min-h-47.5 overflow-hidden border-y border-slate-300/80 py-6 pr-3 transition-all duration-300 hover:border-[#9dbf14] dark:border-white/15">
-                  <div className="absolute -right-10 -top-12 size-32 rounded-full bg-[#9dbf14]/10 transition-transform duration-500 group-hover:scale-125" />
-
-                  <div className="relative">
-                    <span className="mb-6 grid size-12 place-items-center rounded-xl bg-[#9dbf14]/20 text-[#789900] dark:text-[#b4d63d]">
-                      <Building2 size={23} />
-                    </span>
-
-                    <div className="space-y-1">
-                      <p className="text-sm text-slate-500 dark:text-slate-400">
-                        Gestión
-                      </p>
-
-                      <p className="text-4xl font-bold tracking-tight text-[#22264b] dark:text-white">
-                        360°
-                      </p>
-                    </div>
-
-                    <p className="mt-3 max-w-52.5 text-xs leading-5 text-slate-600 dark:text-slate-300">
-                      De inicio a seguimiento en todo el proceso.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="group relative min-h-47.5 overflow-hidden border-y border-slate-300/80 py-6 pl-3 transition-all duration-300 hover:border-[#9dbf14] dark:border-white/15">
-                  <div className="absolute -right-10 -top-12 size-32 rounded-full bg-[#9dbf14]/10 transition-transform duration-500 group-hover:scale-125" />
-
-                  <div className="relative">
-                    <span className="mb-6 grid size-12 place-items-center rounded-xl bg-[#9dbf14]/20 text-[#789900] dark:text-[#b4d63d]">
-                      <ArrowUpRight size={23} />
-                    </span>
-
-                    <div className="space-y-1">
-                      <p className="text-sm text-slate-500 dark:text-slate-400">
-                        Acceso
-                      </p>
-
-                      <p className="text-4xl font-bold tracking-tight text-[#22264b] dark:text-white">
-                        Simple
-                      </p>
-                    </div>
-
-                    <p className="mt-3 max-w-52.5 text-xs leading-5 text-slate-600 dark:text-slate-300">
-                      Rutas claras para tu empresa
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* CTA */}
-              <div className="relative overflow-hidden rounded-3xl bg-[#9dbf14] p-7 text-[#22264b] shadow-xl shadow-[#9dbf14]/15 sm:p-8">
-                <div className="pointer-events-none absolute -right-10 -top-24 size-60 rounded-full border border-[#22264b]/20" />
-                <div className="pointer-events-none absolute -right-2 -top-16 size-44 rounded-full border border-[#22264b]/15" />
-
-                <div className="relative z-10 flex items-start justify-between gap-5">
-                  <div>
-                    <p className="text-sm font-bold tracking-tight">
-                      Tu próximo paso financiero
-                    </p>
-
-                    <p className="mt-5 max-w-md text-2xl font-bold leading-tight tracking-tight sm:text-[27px]">
-                      Una estrategia clara empieza con una buena conversación.
-                    </p>
-
-                    <a
-                      href="#contacto"
-                      className="mt-6 inline-flex items-center gap-2 text-sm font-bold transition-transform hover:translate-x-1"
+                    <motion.span
+                      className="grid size-9 shrink-0 place-items-center rounded-xl bg-[#9dbf14]/10 text-[#829f12] dark:text-[#b4d63d]"
+                      whileHover={
+                        shouldReduceMotion
+                          ? {}
+                          : {
+                              scale: 1.12,
+                              rotate: -6,
+                            }
+                      }
                     >
-                      Hablemos
-                      <ArrowDownRight size={18} />
-                    </a>
+                      <item.icon size={17} strokeWidth={1.9} />
+                    </motion.span>
+
+                    <span className="text-[10px] font-semibold leading-4 text-slate-600 dark:text-slate-300">
+                      {item.text}
+                    </span>
+                  </motion.div>
+                ))}
+              </motion.div>
+            </motion.div>
+          </motion.div>
+
+          {/* COLUMNA DERECHA */}
+
+          <motion.div
+            className="relative mx-auto w-full min-w-0 max-w-[620px] lg:ml-auto"
+            initial={{
+              opacity: 0,
+              x: shouldReduceMotion ? 0 : 60,
+              scale: shouldReduceMotion ? 1 : 0.96,
+            }}
+            animate={{
+              opacity: 1,
+              x: 0,
+              scale: 1,
+            }}
+            transition={{
+              duration: shouldReduceMotion ? 0 : 1,
+              delay: 0.25,
+              ease: "easeOut",
+            }}
+          >
+            {/* ILUMINACIÓN */}
+
+            <motion.div
+              className="pointer-events-none absolute -right-16 -top-16 -z-10 size-72 rounded-full bg-[#9dbf14]/15 blur-[100px]"
+              animate={
+                shouldReduceMotion
+                  ? {}
+                  : {
+                      scale: [1, 1.15, 1],
+                      opacity: [0.6, 1, 0.6],
+                    }
+              }
+              transition={{
+                duration: 8,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+            />
+
+            <motion.div
+              className="pointer-events-none absolute -bottom-16 -left-16 -z-10 size-64 rounded-full bg-[#22264b]/5 blur-[90px]"
+              animate={
+                shouldReduceMotion
+                  ? {}
+                  : {
+                      scale: [1, 1.1, 1],
+                    }
+              }
+              transition={{
+                duration: 10,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+            />
+
+            <div className="space-y-5">
+              {/* VISIÓN FINANCIERA */}
+
+              <motion.div
+                className="group relative isolate overflow-hidden rounded-[26px] border border-[#9dbf14]/20 bg-gradient-to-br from-[#f7f9ed] via-[#eef3dc] to-[#e5edcb] p-6 text-[#22264b] shadow-[0_20px_50px_rgba(34,38,75,0.07)] transition-colors duration-500 sm:p-7 dark:border-white/10 dark:from-[#263047] dark:via-[#202b3e] dark:to-[#182337] dark:text-white"
+                initial={{
+                  opacity: 0,
+                  y: shouldReduceMotion ? 0 : 25,
+                }}
+                animate={{
+                  opacity: 1,
+                  y: 0,
+                }}
+                transition={{
+                  duration: shouldReduceMotion ? 0 : 0.8,
+                  delay: 0.45,
+                }}
+                whileHover={
+                  shouldReduceMotion
+                    ? {}
+                    : {
+                        y: -5,
+                        transition: { duration: 0.3 },
+                      }
+                }
+              >
+                {/* DECORACIÓN */}
+
+                <motion.div
+                  className="pointer-events-none absolute -right-16 -top-24 size-64 rounded-full border border-[#9dbf14]/20"
+                  animate={shouldReduceMotion ? {} : { rotate: 360 }}
+                  transition={{
+                    duration: 55,
+                    repeat: Infinity,
+                    ease: "linear",
+                  }}
+                />
+
+                <motion.div
+                  className="pointer-events-none absolute -right-10 -top-10 size-48 rounded-full bg-[#9dbf14]/10 blur-[65px]"
+                  animate={
+                    shouldReduceMotion
+                      ? {}
+                      : {
+                          scale: [1, 1.2, 1],
+                          opacity: [0.5, 0.9, 0.5],
+                        }
+                  }
+                  transition={{
+                    duration: 6,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                />
+
+                <div className="relative z-10">
+                  {/* CABECERA */}
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <motion.span
+                        className="size-2 rounded-full bg-[#8eac13]"
+                        animate={
+                          shouldReduceMotion
+                            ? {}
+                            : {
+                                scale: [1, 1.4, 1],
+                                opacity: [1, 0.5, 1],
+                              }
+                        }
+                        transition={{
+                          duration: 2,
+                          repeat: Infinity,
+                        }}
+                      />
+
+                      <span className="text-[9px] font-bold tracking-[0.18em] text-[#647d0b] dark:text-[#c5dc75]">
+                        VISIÓN FINANCIERA
+                      </span>
+                    </div>
+
+                    <motion.div
+                      className="grid size-10 place-items-center rounded-xl border border-[#9dbf14]/20 bg-white/60 text-[#789900] shadow-sm dark:border-white/10 dark:bg-white/[0.06] dark:text-[#b4d63d]"
+                      whileHover={
+                        shouldReduceMotion
+                          ? {}
+                          : {
+                              rotate: 8,
+                              scale: 1.1,
+                            }
+                      }
+                    >
+                      <ChartNoAxesCombined size={20} />
+                    </motion.div>
                   </div>
 
-                  <a
-                    href="#contacto"
-                    aria-label="Hablemos"
-                    className="grid size-12 shrink-0 place-items-center rounded-full bg-[#22264b] text-[#b4d63d] transition-transform hover:scale-110"
-                  >
-                    <ArrowUpRight size={23} />
-                  </a>
+                  {/* CONTENIDO */}
+
+                  <div className="mt-6">
+                    <h2 className="max-w-md text-[25px] font-bold leading-[1.15] tracking-[-0.045em] text-[#22264b] sm:text-[30px] dark:text-white">
+                      El futuro de tu empresa
+                      <motion.span
+                        className="block text-[#789900] dark:text-[#b4d63d]"
+                        initial={{
+                          opacity: 0,
+                          x: shouldReduceMotion ? 0 : 15,
+                        }}
+                        animate={{
+                          opacity: 1,
+                          x: 0,
+                        }}
+                        transition={{
+                          duration: shouldReduceMotion ? 0 : 0.7,
+                          delay: 0.8,
+                        }}
+                      >
+                        merece una mejor estrategia.
+                      </motion.span>
+                    </h2>
+
+                    <p className="mt-3 max-w-[380px] text-[11px] leading-[1.8] text-[#59627b] dark:text-white/55">
+                      Integramos soluciones financieras para impulsar el
+                      crecimiento y las oportunidades de tu negocio.
+                    </p>
+                  </div>
+
+                  {/* INDICADORES */}
+
+                  <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-[#22264b]/10 pt-4 dark:border-white/10">
+                    {[
+                      { icon: ShieldCheck, text: "Confianza" },
+                      { icon: TrendingUp, text: "Crecimiento" },
+                      { icon: Sparkles, text: "Innovación" },
+                    ].map((item, index) => (
+                      <motion.span
+                        key={item.text}
+                        className="flex items-center gap-1.5 text-[9px] font-semibold text-[#647d0b] dark:text-[#c5dc75]"
+                        initial={{
+                          opacity: 0,
+                          y: shouldReduceMotion ? 0 : 10,
+                        }}
+                        animate={{
+                          opacity: 1,
+                          y: 0,
+                        }}
+                        transition={{
+                          duration: shouldReduceMotion ? 0 : 0.5,
+                          delay: 0.8 + index * 0.12,
+                        }}
+                        whileHover={shouldReduceMotion ? {} : { y: -2 }}
+                      >
+                        <item.icon size={14} />
+                        {item.text}
+                      </motion.span>
+                    ))}
+                  </div>
                 </div>
+              </motion.div>
+
+              {/* BENEFICIOS VERTICALES */}
+
+              <div className="relative">
+                <motion.div
+                  className="mb-4 flex items-center justify-between"
+                  initial={{
+                    opacity: 0,
+                    y: shouldReduceMotion ? 0 : 15,
+                  }}
+                  animate={{
+                    opacity: 1,
+                    y: 0,
+                  }}
+                  transition={{
+                    duration: shouldReduceMotion ? 0 : 0.6,
+                    delay: 0.65,
+                  }}
+                >
+                  <div>
+                    <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[#829f12] dark:text-[#b4d63d]">
+                      Nuestras soluciones
+                    </p>
+
+                    <h3 className="mt-1 text-lg font-bold tracking-tight text-[#22264b] dark:text-white">
+                      Todo lo que necesitas para avanzar.
+                    </h3>
+                  </div>
+
+                  <motion.div
+                    className="hidden size-9 place-items-center rounded-xl bg-[#9dbf14]/10 text-[#829f12] sm:grid dark:text-[#b4d63d]"
+                    animate={
+                      shouldReduceMotion
+                        ? {}
+                        : {
+                            rotate: [0, 10, 0, -10, 0],
+                          }
+                    }
+                    transition={{
+                      duration: 6,
+                      repeat: Infinity,
+                    }}
+                  >
+                    <Sparkles size={18} />
+                  </motion.div>
+                </motion.div>
+
+                {/* TARJETAS EN COLUMNA */}
+
+                <motion.div
+                  className="flex flex-col gap-3"
+                  variants={cardContainerVariants}
+                  initial="hidden"
+                  animate="visible"
+                >
+                  {featureCards.map((item) => (
+                    <motion.article
+                      key={item.title}
+                      variants={cardVariants}
+                      className="group relative flex items-center gap-4 overflow-hidden rounded-[20px] border border-slate-200/80 bg-white p-4 shadow-[0_5px_22px_rgba(34,38,75,0.035)] transition-colors duration-300 hover:border-[#9dbf14]/40 hover:shadow-[0_12px_30px_rgba(34,38,75,0.08)] sm:p-5 dark:border-white/10 dark:bg-[#111c30]"
+                      whileHover={
+                        shouldReduceMotion
+                          ? {}
+                          : {
+                              x: 6,
+                              scale: 1.01,
+                              transition: {
+                                duration: 0.25,
+                              },
+                            }
+                      }
+                    >
+                      {/* CÍRCULO DECORATIVO */}
+
+                      <motion.div
+                        className="pointer-events-none absolute -right-8 -top-8 size-24 rounded-full border border-[#9dbf14]/15"
+                        whileHover={
+                          shouldReduceMotion
+                            ? {}
+                            : {
+                                scale: 1.4,
+                                rotate: 25,
+                              }
+                        }
+                        transition={{
+                          duration: 0.5,
+                        }}
+                      />
+
+                      {/* ICONO */}
+
+                      <motion.div
+                        className="relative z-10 grid size-12 shrink-0 place-items-center rounded-2xl border border-[#9dbf14]/15 bg-[#9dbf14]/10 text-[#829f12] transition-colors duration-300 group-hover:bg-[#9dbf14] group-hover:text-white dark:text-[#b4d63d]"
+                        whileHover={
+                          shouldReduceMotion
+                            ? {}
+                            : {
+                                rotate: -7,
+                                scale: 1.08,
+                              }
+                        }
+                      >
+                        <item.icon size={22} strokeWidth={1.8} />
+                      </motion.div>
+
+                      {/* TEXTO */}
+
+                      <div className="relative z-10 min-w-0 flex-1">
+                        <p className="text-[9px] font-bold uppercase tracking-[0.13em] text-[#829f12] dark:text-[#b4d63d]">
+                          {item.eyebrow}
+                        </p>
+
+                        <h4 className="mt-1 text-[15px] font-bold tracking-tight text-[#22264b] dark:text-white">
+                          {item.title}
+                        </h4>
+
+                        <p className="mt-1 text-[11px] leading-[1.6] text-slate-500 dark:text-slate-400">
+                          {item.description}
+                        </p>
+                      </div>
+
+                      {/* INDICADOR */}
+
+                      <motion.div
+                        className="relative z-10 grid size-8 shrink-0 place-items-center rounded-full bg-slate-50 text-slate-400 transition-colors duration-300 group-hover:bg-[#9dbf14]/10 group-hover:text-[#829f12] dark:bg-white/5 dark:text-slate-400 dark:group-hover:text-[#b4d63d]"
+                        whileHover={
+                          shouldReduceMotion
+                            ? {}
+                            : {
+                                x: 3,
+                                y: -3,
+                              }
+                        }
+                      >
+                        <ArrowUpRight size={16} />
+                      </motion.div>
+                    </motion.article>
+                  ))}
+                </motion.div>
               </div>
             </div>
-
-            <div className="absolute -bottom-5 -right-5 -z-10 size-28 rounded-[28px] border border-[#9dbf14]/30" />
-          </div>
+          </motion.div>
         </div>
       </div>
     </section>

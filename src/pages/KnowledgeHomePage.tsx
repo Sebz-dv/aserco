@@ -1,38 +1,41 @@
+import { useEffect, useMemo, useState } from "react";
+import { motion, useReducedMotion } from "motion/react";
 import {
   ArrowRight,
+  ArrowUpRight,
+  BookOpen,
   CalendarDays,
   Clock3,
-  Moon,
   Search,
   Sparkles,
-  Sun,
   X,
-  BookOpen,
-  ArrowUpRight,
 } from "lucide-react";
 
-import { useEffect, useMemo, useState } from "react";
-
+import { Footer } from "../components/organisms/Footer";
+import { Header } from "../components/organisms/Header";
 import {
   getKnowledgeArticles,
   getKnowledgeCategories,
+  type AuthUser,
   type KnowledgeArticleRecord,
 } from "../lib/api";
 
-const logoAserco = new URL(
-  "../assets/logos/LogoAserco1.png",
-  import.meta.url,
-).href;
+// -----------------------------------------------------------------------------
+// Tipos
+// -----------------------------------------------------------------------------
 
-const logoAsercoDark = new URL(
-  "../assets/logos/logoAsercoDark.png",
-  import.meta.url,
-).href;
-
-type Props = {
+type Props = Readonly<{
+  dark: boolean;
+  user: AuthUser | null;
+  onToggleTheme: () => void;
+  onConfirmLogout?: () => void;
+  onOpenProfile: () => void;
+  onOpenLogin: () => void;
+  onOpenRegister: () => void;
+  onOpenAdmin: (path?: string) => void;
+  onOpenKnowledge: () => void;
   onOpenArticle: (slug: string) => void;
-  onOpenAdminDashboard?: () => void;
-};
+}>;
 
 type ArticleView = {
   id: number;
@@ -51,8 +54,26 @@ type CategoryView = {
   name: string;
 };
 
+type ArticleCardProps = Readonly<{
+  article: ArticleView;
+  onOpenArticle: (slug: string) => void;
+  index: number;
+  reducedMotion: boolean | null;
+}>;
+
+type ImageWithFallbackProps = Readonly<{
+  src: string;
+  alt: string;
+  className: string;
+  loading?: "eager" | "lazy";
+}>;
+
+// -----------------------------------------------------------------------------
+// Constantes
+// -----------------------------------------------------------------------------
+
 const DEFAULT_IMAGE =
-  "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=80";
+  "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1400&q=85";
 
 const dateFormatter = new Intl.DateTimeFormat("es-CO", {
   day: "2-digit",
@@ -60,16 +81,53 @@ const dateFormatter = new Intl.DateTimeFormat("es-CO", {
   year: "numeric",
 });
 
-function formatDate(date: string | null) {
+const easeOut = [0.22, 1, 0.36, 1] as const;
+
+const reveal = {
+  hidden: { opacity: 0, y: 24 },
+  visible: { opacity: 1, y: 0 },
+};
+
+const solutions = [
+  {
+    number: "01",
+    title: "Factoring",
+    description: "Convierte tus facturas en oportunidades de liquidez.",
+  },
+  {
+    number: "02",
+    title: "Confirming",
+    description: "Optimiza la gestión de pagos a tus proveedores.",
+  },
+  {
+    number: "03",
+    title: "Leasing",
+    description: "Impulsa tu operación con financiación de activos.",
+  },
+  {
+    number: "04",
+    title: "Crédito rotativo",
+    description: "Cuenta con alternativas para tu flujo de caja.",
+  },
+  {
+    number: "05",
+    title: "Capital de trabajo",
+    description: "Fortalece la operación y el crecimiento de tu negocio.",
+  },
+];
+
+// -----------------------------------------------------------------------------
+// Utilidades
+// -----------------------------------------------------------------------------
+
+function formatDate(date: string | null): string {
   if (!date) return "Reciente";
 
-  const parsedDate = new Date(date);
+  const parsed = new Date(date);
 
-  if (Number.isNaN(parsedDate.getTime())) {
-    return "Reciente";
-  }
+  if (Number.isNaN(parsed.getTime())) return "Reciente";
 
-  return dateFormatter.format(parsedDate);
+  return dateFormatter.format(parsed);
 }
 
 function mapArticle(article: KnowledgeArticleRecord): ArticleView {
@@ -90,73 +148,106 @@ function mapArticle(article: KnowledgeArticleRecord): ArticleView {
   };
 }
 
-function ThemeToggle() {
-  const [isDark, setIsDark] = useState(
-    () =>
-      typeof document !== "undefined" &&
-      document.documentElement.classList.contains("dark"),
-  );
+function filterKnowledgeArticles(
+  articles: ArticleView[],
+  categories: CategoryView[],
+  searchTerm: string,
+  selectedCategory: string,
+): ArticleView[] {
+  const normalizedSearch = searchTerm.trim().toLowerCase();
 
-  const toggleTheme = () => {
-    const nextTheme = !document.documentElement.classList.contains("dark");
+  const selectedCategoryName = categories.find(
+    (category) => category.slug === selectedCategory,
+  )?.name;
 
-    document.documentElement.classList.toggle("dark", nextTheme);
-    setIsDark(nextTheme);
-  };
+  return articles.filter((article) => {
+    const matchesCategory =
+      selectedCategory === "all" ||
+      article.categoryName.toLowerCase() ===
+        selectedCategoryName?.toLowerCase();
 
-  return (
-    <button
-      type="button"
-      onClick={toggleTheme}
-      aria-label={isDark ? "Activar modo claro" : "Activar modo oscuro"}
-      aria-pressed={isDark}
-      title={isDark ? "Modo claro" : "Modo oscuro"}
-      className="
-        grid size-10 shrink-0 place-items-center rounded-full
-        border border-slate-200 bg-white text-[#22264b]
-        transition-all duration-300
-        hover:border-[#9dbf14] hover:bg-[#9dbf14]/10
-        dark:border-white/10 dark:bg-white/5 dark:text-[#dff090]
-        dark:hover:bg-white/10
-      "
-    >
-      {isDark ? <Sun size={18} /> : <Moon size={18} />}
-    </button>
-  );
+    const searchableText = [
+      article.title,
+      article.subtitle,
+      article.excerpt,
+      article.categoryName,
+    ]
+      .join(" ")
+      .toLowerCase();
+
+    const matchesSearch =
+      !normalizedSearch || searchableText.includes(normalizedSearch);
+
+    return matchesCategory && matchesSearch;
+  });
 }
 
-function ArticleMeta({ article }: { article: ArticleView }) {
+// -----------------------------------------------------------------------------
+// Componentes auxiliares
+// -----------------------------------------------------------------------------
+
+function ArticleMeta({ article }: Readonly<{ article: ArticleView }>) {
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-500 dark:text-slate-400">
       <span className="inline-flex items-center gap-1.5">
-        <CalendarDays size={14} />
+        <CalendarDays size={13} />
         {formatDate(article.publishedAt)}
       </span>
 
       <span className="inline-flex items-center gap-1.5">
-        <Clock3 size={14} />
+        <Clock3 size={13} />
         {article.readTime} min de lectura
       </span>
     </div>
   );
 }
 
+function ImageWithFallback({
+  src,
+  alt,
+  className,
+  loading = "lazy",
+}: ImageWithFallbackProps) {
+  return (
+    <img
+      src={src}
+      alt={alt}
+      loading={loading}
+      onError={(event) => {
+        event.currentTarget.onerror = null;
+        event.currentTarget.src = DEFAULT_IMAGE;
+      }}
+      className={className}
+    />
+  );
+}
+
 function ArticleCard({
   article,
   onOpenArticle,
-}: {
-  article: ArticleView;
-  onOpenArticle: (slug: string) => void;
-}) {
+  index,
+  reducedMotion,
+}: ArticleCardProps) {
   return (
-    <article
+    <motion.article
+      variants={reveal}
+      initial={reducedMotion ? false : "hidden"}
+      whileInView="visible"
+      viewport={{ once: true, amount: 0.12 }}
+      transition={{
+        duration: reducedMotion ? 0 : 0.65,
+        delay: reducedMotion ? 0 : Math.min(index * 0.06, 0.3),
+        ease: easeOut,
+      }}
+      whileHover={reducedMotion ? undefined : { y: -7 }}
       className="
-        group flex h-full flex-col overflow-hidden rounded-[22px]
-        border border-slate-200/80 bg-white
+        group flex h-full flex-col overflow-hidden rounded-3xl
+        border border-[#22264b]/8 bg-[#fffefa]/90
+        shadow-[0_12px_40px_rgba(34,38,75,0.045)]
         transition-all duration-300
-        hover:-translate-y-1 hover:border-[#9dbf14]/50
-        hover:shadow-xl hover:shadow-[#22264b]/5
-        dark:border-white/10 dark:bg-[#101a2c]
+        hover:border-[#9dbf14]/45
+        hover:shadow-[0_24px_55px_rgba(34,38,75,0.11)]
+        dark:border-white/9 dark:bg-[#101a2c]/90
         dark:hover:border-[#9dbf14]/40
       "
     >
@@ -164,37 +255,45 @@ function ArticleCard({
         type="button"
         onClick={() => onOpenArticle(article.slug)}
         aria-label={`Leer ${article.title}`}
-        className="relative block h-52 w-full overflow-hidden text-left"
+        className="relative block h-56 w-full overflow-hidden text-left"
       >
-        <img
+        <ImageWithFallback
           src={article.coverImageUrl}
           alt={article.title}
-          loading="lazy"
           className="
             h-full w-full object-cover
             transition-transform duration-700
             group-hover:scale-105
           "
-          onError={(event) => {
-            event.currentTarget.src = DEFAULT_IMAGE;
-          }}
         />
 
-        <div className="absolute inset-0 bg-gradient-to-t from-[#111827]/35 to-transparent opacity-60" />
+        <div className="absolute inset-0 bg-linear-to-t from-[#111827]/70 via-[#111827]/5 to-transparent" />
 
         <span
           className="
             absolute bottom-4 left-4 rounded-full
-            border border-white/20 bg-[#22264b]/85
-            px-3 py-1.5 text-[10px] font-bold uppercase
-            tracking-wider text-white backdrop-blur-md
+            border border-white/20 bg-[#22264b]/80
+            px-3.5 py-1.5 text-[10px] font-bold uppercase
+            tracking-[0.13em] text-white backdrop-blur-md
           "
         >
           {article.categoryName}
         </span>
+
+        <span
+          className="
+            absolute right-4 top-4 grid size-9 place-items-center
+            rounded-full border border-white/20 bg-white/15
+            text-white opacity-0 backdrop-blur-md
+            transition-all duration-300
+            group-hover:translate-x-0 group-hover:opacity-100
+          "
+        >
+          <ArrowUpRight size={17} />
+        </span>
       </button>
 
-      <div className="flex flex-1 flex-col space-y-4 p-5">
+      <div className="flex flex-1 flex-col gap-4 p-5 sm:p-6">
         <ArticleMeta article={article} />
 
         <h3
@@ -212,7 +311,7 @@ function ArticleCard({
           {article.subtitle}
         </p>
 
-        <div className="mt-auto pt-2">
+        <div className="mt-auto border-t border-[#22264b]/7 pt-4 dark:border-white/10">
           <button
             type="button"
             onClick={() => onOpenArticle(article.slug)}
@@ -228,24 +327,225 @@ function ArticleCard({
           </button>
         </div>
       </div>
-    </article>
+    </motion.article>
   );
 }
 
+function ArticleSkeleton() {
+  return (
+    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      {Array.from({ length: 6 }).map((_, index) => (
+        <div
+          key={index}
+          className="
+            h-107.5 animate-pulse rounded-3xl
+            border border-slate-200/50 bg-white/60
+            dark:border-white/5 dark:bg-white/4
+          "
+        />
+      ))}
+    </div>
+  );
+}
+
+function EmptyArticles({ onReset }: Readonly<{ onReset: () => void }>) {
+  return (
+    <div
+      className="
+        rounded-[26px] border border-dashed
+        border-slate-300 bg-[#fffefa]/65
+        px-6 py-16 text-center
+        dark:border-white/15 dark:bg-white/2
+      "
+    >
+      <Search size={30} className="mx-auto mb-4 text-slate-400" />
+
+      <h3 className="text-lg font-bold text-[#22264b] dark:text-white">
+        No encontramos artículos
+      </h3>
+
+      <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500 dark:text-slate-400">
+        Prueba con otra búsqueda o selecciona una categoría diferente.
+      </p>
+
+      <button
+        type="button"
+        onClick={onReset}
+        className="mt-5 text-sm font-bold text-[#789900] hover:underline dark:text-[#b4d63d]"
+      >
+        Ver todos los artículos
+      </button>
+    </div>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// Sección de artículo destacado
+// -----------------------------------------------------------------------------
+
+function FeaturedArticle({
+  article,
+  onOpenArticle,
+  reducedMotion,
+}: Readonly<{
+  article: ArticleView;
+  onOpenArticle: (slug: string) => void;
+  reducedMotion: boolean | null;
+}>) {
+  return (
+    <motion.div
+      initial={reducedMotion ? false : { opacity: 0, y: 32 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{
+        duration: reducedMotion ? 0 : 0.85,
+        delay: reducedMotion ? 0 : 0.12,
+        ease: easeOut,
+      }}
+      className="
+        group relative grid overflow-hidden rounded-[30px]
+        border border-[#22264b]/8 bg-[#fffefa]/95
+        shadow-[0_28px_80px_rgba(29,53,87,0.09)]
+        lg:grid-cols-[1.12fr_0.88fr]
+        dark:border-white/10 dark:bg-[#101a2c]/95
+        dark:shadow-black/20
+      "
+    >
+      <button
+        type="button"
+        onClick={() => onOpenArticle(article.slug)}
+        aria-label={`Leer ${article.title}`}
+        className="
+          group/image relative min-h-75
+          overflow-hidden text-left lg:min-h-122.5
+        "
+      >
+        <ImageWithFallback
+          src={article.coverImageUrl}
+          alt={article.title}
+          loading="eager"
+          className="
+            absolute inset-0 h-full w-full object-cover
+            transition-transform duration-1000
+            group-hover/image:scale-105
+          "
+        />
+
+        <div className="absolute inset-0 bg-linear-to-t from-[#111827]/65 via-transparent to-transparent" />
+
+        <span
+          className="
+            absolute bottom-6 left-6 rounded-full
+            border border-white/20 bg-[#22264b]/80
+            px-4 py-2 text-[10px] font-bold uppercase
+            tracking-wider text-white backdrop-blur-md
+          "
+        >
+          {article.categoryName}
+        </span>
+
+        <span
+          className="
+            absolute right-6 top-6 grid size-11 place-items-center
+            rounded-full border border-white/25
+            bg-white/15 text-white backdrop-blur-md
+            transition-transform duration-300
+            group-hover/image:rotate-45
+          "
+        >
+          <ArrowUpRight size={20} />
+        </span>
+      </button>
+
+      <div className="relative flex flex-col justify-center gap-6 p-7 sm:p-10 lg:p-12">
+        <div
+          className="
+            inline-flex w-fit items-center gap-2
+            rounded-full bg-[#9dbf14]/10 px-3.5 py-2
+            text-[10px] font-bold uppercase
+            tracking-[0.18em] text-[#789900]
+            dark:text-[#b4d63d]
+          "
+        >
+          <Sparkles size={13} />
+          ARTÍCULO DESTACADO
+        </div>
+
+        <h2
+          className="
+            text-3xl font-bold leading-[1.14]
+            tracking-tight text-[#22264b]
+            sm:text-4xl dark:text-white
+          "
+        >
+          {article.title}
+        </h2>
+
+        <p className="text-sm leading-7 text-slate-600 sm:text-base dark:text-slate-400">
+          {article.excerpt}
+        </p>
+
+        <ArticleMeta article={article} />
+
+        <div className="pt-2">
+          <button
+            type="button"
+            onClick={() => onOpenArticle(article.slug)}
+            className="
+              group/button inline-flex items-center gap-3
+              rounded-full bg-[#9dbf14] px-6 py-3.5
+              text-sm font-bold text-[#22264b]
+              transition-all hover:gap-5
+              hover:bg-[#b4d63d]
+              hover:shadow-lg hover:shadow-[#9dbf14]/20
+            "
+          >
+            Leer artículo
+            <ArrowRight
+              size={17}
+              className="transition-transform group-hover/button:translate-x-1"
+            />
+          </button>
+        </div>
+
+        <div
+          className="
+            pointer-events-none absolute -bottom-24 -right-24
+            size-64 rounded-full border border-[#9dbf14]/10
+          "
+        />
+      </div>
+    </motion.div>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// Página principal
+// -----------------------------------------------------------------------------
+
 export function KnowledgeHomePage({
-  onOpenArticle, 
+  dark,
+  user,
+  onToggleTheme,
+  onConfirmLogout,
+  onOpenProfile,
+  onOpenLogin,
+  onOpenRegister,
+  onOpenAdmin,
+  onOpenKnowledge,
+  onOpenArticle,
 }: Props) {
+  const reducedMotion = useReducedMotion();
+
   const [categories, setCategories] = useState<CategoryView[]>([]);
   const [articles, setArticles] = useState<ArticleView[]>([]);
   const [loading, setLoading] = useState(true);
-
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
 
   useEffect(() => {
     let mounted = true;
 
-    const loadContent = async () => {
+    async function loadContent() {
       try {
         const [categoryData, articleData] = await Promise.all([
           getKnowledgeCategories(),
@@ -272,7 +572,7 @@ export function KnowledgeHomePage({
       } finally {
         if (mounted) setLoading(false);
       }
-    };
+    }
 
     void loadContent();
 
@@ -284,353 +584,129 @@ export function KnowledgeHomePage({
   const topFeature = articles[0] ?? null;
   const sideArticles = articles.slice(1, 3);
 
-  const filteredArticles = useMemo(() => {
-    const normalizedSearch = searchTerm.trim().toLowerCase();
-
-    return articles.filter((article) => {
-      const matchesCategory =
-        selectedCategory === "all" ||
-        article.categoryName.toLowerCase() ===
-          categories
-            .find((category) => category.slug === selectedCategory)
-            ?.name.toLowerCase();
-
-      const searchableText = [
-        article.title,
-        article.subtitle,
-        article.excerpt,
-        article.categoryName,
-      ]
-        .join(" ")
-        .toLowerCase();
-
-      return (
-        matchesCategory &&
-        (!normalizedSearch || searchableText.includes(normalizedSearch))
-      );
-    });
-  }, [articles, categories, searchTerm, selectedCategory]);
+  const filteredArticles = useMemo(
+    () =>
+      filterKnowledgeArticles(
+        articles,
+        categories,
+        searchTerm,
+        selectedCategory,
+      ),
+    [articles, categories, searchTerm, selectedCategory],
+  );
 
   const hasFilters = searchTerm.trim() !== "" || selectedCategory !== "all";
 
+  function resetFilters() {
+    setSearchTerm("");
+    setSelectedCategory("all");
+  }
+
+  function scrollToArticles() {
+    setSelectedCategory("all");
+
+    document.getElementById("articulos")?.scrollIntoView({
+      behavior: reducedMotion ? "auto" : "smooth",
+      block: "start",
+    });
+  }
+
+  const categoryButtonClass = (active: boolean) =>
+    `
+      shrink-0 rounded-full px-5 py-3
+      text-xs font-bold transition-all
+      ${
+        active
+          ? "bg-[#22264b] text-white shadow-lg shadow-[#22264b]/10 dark:bg-[#9dbf14] dark:text-[#22264b]"
+          : "border border-[#22264b]/10 bg-[#fffefa]/75 text-slate-600 hover:border-[#9dbf14] dark:border-white/10 dark:bg-[#101a2c] dark:text-slate-300"
+      }
+    `;
+
   return (
-    <div
-      className="
-    relative isolate min-h-screen overflow-hidden
-    bg-[#f7f8f4] text-[#22264b]
-    transition-colors duration-300
-    dark:bg-[#050b17] dark:text-white
-  "
-    >
-      {/* FONDO GLOBAL DECORATIVO */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
-      >
-        {/* Círculos superiores */}
-        <div
-          className="
-      absolute -right-40 top-[5%] size-[480px]
-      rounded-full border border-[#9dbf14]/20
-      bg-[#9dbf14]/[0.025]
-      dark:border-[#9dbf14]/20 dark:bg-[#9dbf14]/[0.04]
-    "
-        />
+    <div className="relative isolate min-h-screen text-[#22264b] dark:text-white">
+      <Header
+        dark={dark}
+        user={user}
+        onToggleTheme={onToggleTheme}
+        onConfirmLogout={onConfirmLogout}
+        onOpenProfile={onOpenProfile}
+        onOpenLogin={onOpenLogin}
+        onOpenRegister={onOpenRegister}
+        onOpenAdmin={onOpenAdmin}
+        onOpenKnowledge={onOpenKnowledge}
+      />
 
-        <div
-          className="
-      absolute -right-20 top-[8%] size-[340px]
-      rounded-full border border-[#9dbf14]/20
-      dark:border-[#9dbf14]/25
-    "
-        />
-
-        <div
-          className="
-      absolute right-[5%] top-[12%] size-[190px]
-      rounded-full border border-[#22264b]/10
-      dark:border-white/10
-    "
-        />
-
-        {/* Luz ambiental superior izquierda */}
-        <div
-          className="
-      absolute -left-40 top-[8%] size-[420px]
-      rounded-full bg-[#9dbf14]/[0.06] blur-[100px]
-      dark:bg-[#9dbf14]/[0.09]
-    "
-        />
-
-        {/* Zona central */}
-        <div
-          className="
-      absolute -left-52 top-[35%] size-[500px]
-      rounded-full border border-[#9dbf14]/15
-      dark:border-[#9dbf14]/20
-    "
-        />
-
-        <div
-          className="
-      absolute -left-28 top-[39%] size-[350px]
-      rounded-full border border-[#3163a2]/10
-      dark:border-[#3163a2]/20
-    "
-        />
-
-        <div
-          className="
-      absolute right-[-180px] top-[43%] size-[460px]
-      rounded-full bg-[#3163a2]/[0.04] blur-[100px]
-      dark:bg-[#3163a2]/[0.10]
-    "
-        />
-
-        <div
-          className="
-      absolute right-[-90px] top-[48%] size-[280px]
-      rounded-full border border-[#9dbf14]/20
-      dark:border-[#9dbf14]/20
-    "
-        />
-
-        {/* Zona inferior */}
-        <div
-          className="
-      absolute -right-48 top-[72%] size-[500px]
-      rounded-full border border-[#9dbf14]/20
-      dark:border-[#9dbf14]/20
-    "
-        />
-
-        <div
-          className="
-      absolute right-[-70px] top-[76%] size-[300px]
-      rounded-full border border-[#22264b]/10
-      dark:border-white/10
-    "
-        />
-
-        <div
-          className="
-      absolute -left-40 top-[80%] size-[400px]
-      rounded-full bg-[#9dbf14]/[0.05] blur-[100px]
-      dark:bg-[#9dbf14]/[0.08]
-    "
-        />
-
-        {/* Círculos pequeños */}
-        <div
-          className="
-      absolute left-[18%] top-[28%] size-16
-      rounded-full border border-[#9dbf14]/25
-      dark:border-[#9dbf14]/30
-    "
-        />
-
-        <div
-          className="
-      absolute right-[22%] top-[62%] size-24
-      rounded-full border border-[#3163a2]/15
-      dark:border-[#3163a2]/25
-    "
-        />
-
-        {/* Cuadrícula sutil global */}
-        <div
-          className="
-      absolute inset-0 opacity-[0.025]
-      bg-[linear-gradient(#22264b_1px,transparent_1px),linear-gradient(90deg,#22264b_1px,transparent_1px)]
-      bg-size-[64px_64px]
-      dark:bg-[linear-gradient(#ffffff_1px,transparent_1px),linear-gradient(90deg,#ffffff_1px,transparent_1px)]
-      dark:opacity-[0.035]
-    "
-        />
-
-        {/* Círculos decorativos adicionales */}
-        <div
-          className="pointer-events-none absolute inset-0 overflow-hidden"
-          aria-hidden="true"
-        >
-          {/* Parte superior */}
-          <div className="absolute -top-32 -left-32 h-[420px] w-[420px] rounded-full border border-[#9dbf14]/15" />
-          <div className="absolute -top-20 -left-20 h-[300px] w-[300px] rounded-full border border-[#9dbf14]/20" />
-          <div className="absolute top-20 left-40 h-20 w-20 rounded-full bg-[#9dbf14]/10 blur-xl" />
-
-          <div className="absolute top-24 right-[12%] h-44 w-44 rounded-full border border-[#22264b]/10 dark:border-white/10" />
-          <div className="absolute top-36 right-[15%] h-28 w-28 rounded-full border border-[#9dbf14]/20" />
-          <div className="absolute top-52 right-[8%] h-8 w-8 rounded-full bg-[#9dbf14]/20 blur-sm" />
-
-          {/* Zona central */}
-          <div className="absolute top-[38%] -left-40 h-[480px] w-[480px] rounded-full border border-[#22264b]/10 dark:border-white/10" />
-          <div className="absolute top-[42%] -left-20 h-[320px] w-[320px] rounded-full border border-[#9dbf14]/20" />
-          <div className="absolute top-[48%] left-20 h-16 w-16 rounded-full bg-[#9dbf14]/10 blur-2xl" />
-
-          <div className="absolute top-[45%] right-[-180px] h-[460px] w-[460px] rounded-full border border-[#9dbf14]/20" />
-          <div className="absolute top-[49%] right-[-100px] h-[300px] w-[300px] rounded-full border border-[#22264b]/10 dark:border-white/10" />
-          <div className="absolute top-[55%] right-[8%] h-12 w-12 rounded-full bg-[#9dbf14]/10 blur-xl" />
-
-          {/* Parte inferior */}
-          <div className="absolute bottom-[12%] left-[20%] h-40 w-40 rounded-full border border-[#9dbf14]/20" />
-          <div className="absolute bottom-[15%] left-[23%] h-24 w-24 rounded-full bg-[#9dbf14]/10 blur-2xl" />
-
-          <div className="absolute bottom-[-180px] right-[18%] h-[460px] w-[460px] rounded-full border border-[#22264b]/10 dark:border-white/10" />
-          <div className="absolute bottom-[-100px] right-[22%] h-[300px] w-[300px] rounded-full border border-[#9dbf14]/20" />
-          <div className="absolute bottom-10 right-[10%] h-10 w-10 rounded-full bg-[#9dbf14]/15 blur-lg" />
-
-          {/* Círculos pequeños dispersos */}
-          <div className="absolute top-[28%] left-[48%] h-5 w-5 rounded-full bg-[#9dbf14]/15" />
-          <div className="absolute top-[68%] left-[65%] h-8 w-8 rounded-full border border-[#9dbf14]/25" />
-          <div className="absolute top-[82%] left-[8%] h-6 w-6 rounded-full bg-[#22264b]/10 dark:bg-white/10" />
-          <div className="absolute top-[18%] left-[70%] h-3 w-3 rounded-full bg-[#9dbf14]/30" />
-        </div>
-      </div>
-
-      {/* HEADER */}
-      <header
-        className="
-          sticky top-0 z-50 border-b border-slate-200/80
-          bg-white/90 backdrop-blur-xl
-          dark:border-white/10 dark:bg-[#050b17]/90
-        "
-      >
-        <div className="mx-auto flex max-w-360 items-center justify-between gap-4 px-5 py-3 sm:px-8 lg:px-12">
-          {/* LOGO */}
-          <a
-            href="#conocimiento"
-            aria-label="Aserco Smart Finance - Inicio"
-            className="flex shrink-0 items-center"
-          >
-            <img
-              src={logoAserco}
-              alt="Aserco Smart Finance"
-              className="hero-logo hero-logo-light"
-            />
-
-            <img
-              src={logoAsercoDark}
-              alt=""
-              aria-hidden="true"
-              className="hero-logo hero-logo-dark"
-            />
-          </a>
-
-          {/* NAVEGACIÓN */}
-          <nav className="hidden items-center gap-6 lg:flex">
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedCategory("all");
-                document
-                  .getElementById("articulos")
-                  ?.scrollIntoView({ behavior: "smooth" });
-              }}
-              className="
-                text-sm font-semibold text-slate-600
-                transition-colors hover:text-[#789900]
-                dark:text-slate-300 dark:hover:text-[#b4d63d]
-              "
-            >
-              Inicio
-            </button>
-
-            {categories.slice(0, 4).map((category) => (
-              <button
-                key={category.slug}
-                type="button"
-                onClick={() => {
-                  setSelectedCategory(category.slug);
-                  document
-                    .getElementById("articulos")
-                    ?.scrollIntoView({ behavior: "smooth" });
-                }}
-                className="
-                  whitespace-nowrap text-sm font-medium
-                  text-slate-600 transition-colors
-                  hover:text-[#789900]
-                  dark:text-slate-300 dark:hover:text-[#b4d63d]
-                "
-              >
-                {category.name}
-              </button>
-            ))}
-          </nav>
-
-          {/* ACCIONES */}
-          <div className="flex shrink-0 items-center gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                window.location.hash = '#inicio'
-              }}
-              className="
-                inline-flex items-center gap-2 rounded-full
-                border border-[#22264b]/10 bg-white px-3 py-2
-                text-xs font-bold text-[#22264b]
-                transition-all hover:border-[#9dbf14]
-                hover:bg-[#9dbf14]/10 dark:border-white/10
-                dark:bg-white/5 dark:text-white dark:hover:border-[#9dbf14]
-              "
-            >
-              <ArrowUpRight size={14} />
-              Inicio
-            </button>
-
-            <ThemeToggle />
-          </div>
-        </div>
-      </header>
+      <div className="h-22" aria-hidden="true" />
 
       <main id="conocimiento">
         {/* HERO EDITORIAL */}
-        <section
-          className="
-            relative isolate overflow-hidden
-            border-b border-slate-200/70
-            dark:border-white/10
-          "
-        >
-          {/* DECORACIÓN */}
-          <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-            <div
+        <section className="relative isolate overflow-hidden">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
+          >
+            <motion.div
+              animate={
+                reducedMotion
+                  ? undefined
+                  : { y: [0, -18, 0], rotate: [0, 4, 0] }
+              }
+              transition={{
+                duration: 14,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
               className="
-              absolute -right-40 -top-48 size-120 rounded-full
-              border border-[#9dbf14]/20 bg-[#9dbf14]/5
-              dark:border-[#9dbf14]/20 dark:bg-[#9dbf14]/5
-            "
+                absolute -right-44 -top-48 size-142.5
+                rounded-full border border-[#9dbf14]/20
+                bg-[#9dbf14]/2.5
+                dark:bg-[#9dbf14]/3.5
+              "
             />
 
             <div
               className="
-              absolute -left-40 bottom-0 size-100 rounded-full
-              bg-[#9dbf14]/5 blur-3xl
-              dark:bg-[#9dbf14]/10
-            "
+                absolute -left-40 bottom-0 size-105
+                rounded-full bg-[#9dbf14]/5.5 blur-[120px]
+                dark:bg-[#9dbf14]/8
+              "
             />
 
             <div
               className="
-              absolute inset-0 opacity-[0.025]
-              bg-[linear-gradient(#22264b_1px,transparent_1px),linear-gradient(90deg,#22264b_1px,transparent_1px)]
-              bg-size-[52px_52px]
-              dark:bg-[linear-gradient(#ffffff_1px,transparent_1px),linear-gradient(90deg,#ffffff_1px,transparent_1px)]
-              dark:opacity-[0.035]
-            "
+                absolute right-[12%] top-[28%] size-3 rounded-full
+                bg-[#9dbf14]/40
+                shadow-[0_0_24px_8px_rgba(157,191,20,0.12)]
+              "
+            />
+
+            <div
+              className="
+                absolute left-[12%] top-[68%] size-2 rounded-full
+                bg-[#3163a2]/50
+                shadow-[0_0_20px_8px_rgba(49,99,162,0.12)]
+              "
             />
           </div>
 
-          <div className="mx-auto max-w-360 px-5 py-12 sm:px-8 lg:px-12 lg:py-16">
-            {/* INTRODUCCIÓN */}
-            <div className="mb-10 max-w-3xl">
+          <div className="mx-auto max-w-360 px-5 pb-14 pt-12 sm:px-8 lg:px-12 lg:pb-20 lg:pt-16">
+            <motion.div
+              initial={reducedMotion ? false : { opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                duration: reducedMotion ? 0 : 0.8,
+                ease: easeOut,
+              }}
+              className="mb-12 max-w-4xl"
+            >
               <div
                 className="
-                mb-5 inline-flex items-center gap-2
-                rounded-full border border-[#9dbf14]/30
-                bg-[#9dbf14]/10 px-4 py-2
-                text-[10px] font-bold tracking-[0.2em]
-                text-[#647d0b] dark:text-[#dff090]
-              "
+                  mb-6 inline-flex items-center gap-2.5
+                  rounded-full border border-[#9dbf14]/30
+                  bg-[#9dbf14]/10 px-4 py-2
+                  text-[10px] font-bold tracking-[0.2em]
+                  text-[#647d0b] dark:text-[#dff090]
+                "
               >
                 <Sparkles size={13} />
                 CENTRO DE CONOCIMIENTO
@@ -638,158 +714,71 @@ export function KnowledgeHomePage({
 
               <h1
                 className="
-                text-4xl font-semibold leading-[1.12]
-                tracking-[-0.045em] text-[#22264b]
-                sm:text-5xl lg:text-6xl
-                dark:text-white
-              "
+                  max-w-4xl text-4xl font-semibold leading-[1.08]
+                  tracking-[-0.045em] text-[#22264b]
+                  sm:text-5xl lg:text-[68px]
+                  dark:text-white
+                "
               >
-                Ideas que impulsan
+                Ideas que impulsan{" "}
                 <span className="block text-[#789900] dark:text-[#b4d63d]">
                   mejores decisiones.
                 </span>
               </h1>
 
-              <p
-                className="
-                mt-5 max-w-2xl text-base leading-7
-                text-slate-600 sm:text-lg
-                dark:text-slate-400
-              "
-              >
-                Conocimiento financiero, estrategias y herramientas para
-                comprender mejor tu negocio y encontrar nuevas oportunidades de
-                crecimiento.
-              </p>
-            </div>
-
-            {/* PORTADA */}
-            {loading ? (
-              <div
-                className="
-                h-[500px] animate-pulse rounded-[28px]
-                bg-slate-200 dark:bg-white/5
-              "
-              />
-            ) : topFeature ? (
-              <div
-                className="
-                grid overflow-hidden rounded-[28px]
-                border border-slate-200/80 bg-white
-                shadow-[0_25px_70px_rgba(29,53,87,0.07)]
-                lg:grid-cols-[1.1fr_0.9fr]
-                dark:border-white/10 dark:bg-[#101a2c]
-                dark:shadow-black/20
-              "
-              >
-                {/* IMAGEN PRINCIPAL */}
-                <div
+              <div className="mt-6 flex flex-col gap-7 md:flex-row md:items-end md:justify-between">
+                <p
                   className="
-                  group relative min-h-[300px]
-                  overflow-hidden lg:min-h-[490px]
-                "
-                >
-                  <img
-                    src={topFeature.coverImageUrl}
-                    alt={topFeature.title}
-                    className="
-                      absolute inset-0 h-full w-full object-cover
-                      transition-transform duration-1000
-                      group-hover:scale-105
-                    "
-                    onError={(event) => {
-                      event.currentTarget.src = DEFAULT_IMAGE;
-                    }}
-                  />
-
-                  <div
-                    className="
-                    absolute inset-0
-                    bg-gradient-to-t from-[#111827]/50
-                    via-transparent to-transparent
-                  "
-                  />
-
-                  <span
-                    className="
-                    absolute bottom-6 left-6
-                    rounded-full border border-white/20
-                    bg-[#22264b]/80 px-4 py-2
-                    text-[10px] font-bold uppercase
-                    tracking-wider text-white backdrop-blur-md
-                  "
-                  >
-                    {topFeature.categoryName}
-                  </span>
-                </div>
-
-                {/* CONTENIDO */}
-                <div
-                  className="
-                  flex flex-col justify-center
-                  space-y-6 p-7 sm:p-10 lg:p-12
-                "
-                >
-                  <div
-                    className="
-                    inline-flex w-fit items-center gap-2
-                    text-[10px] font-bold uppercase
-                    tracking-[0.2em] text-[#789900]
-                    dark:text-[#b4d63d]
-                  "
-                  >
-                    <Sparkles size={14} />
-                    DESTACADO
-                  </div>
-
-                  <h2
-                    className="
-                    text-3xl font-bold leading-[1.15]
-                    tracking-tight text-[#22264b]
-                    sm:text-4xl
-                    dark:text-white
-                  "
-                  >
-                    {topFeature.title}
-                  </h2>
-
-                  <p
-                    className="
-                    text-sm leading-7 text-slate-600 sm:text-base
+                    max-w-2xl text-base leading-7
+                    text-slate-600 sm:text-lg
                     dark:text-slate-400
                   "
-                  >
-                    {topFeature.excerpt}
-                  </p>
+                >
+                  Conocimiento financiero, estrategias y herramientas para
+                  comprender mejor tu negocio y encontrar nuevas oportunidades
+                  de crecimiento.
+                </p>
 
-                  <ArticleMeta article={topFeature} />
-
-                  <div className="pt-2">
-                    <button
-                      type="button"
-                      onClick={() => onOpenArticle(topFeature.slug)}
-                      className="
-                        inline-flex items-center gap-3
-                        rounded-full bg-[#9dbf14]
-                        px-6 py-3.5 text-sm font-bold
-                        text-[#22264b] transition-all
-                        hover:gap-5 hover:bg-[#b4d63d]
-                        hover:shadow-lg hover:shadow-[#9dbf14]/20
-                      "
-                    >
-                      Leer artículo
-                      <ArrowRight size={17} />
-                    </button>
-                  </div>
-                </div>
+                <button
+                  type="button"
+                  onClick={scrollToArticles}
+                  className="
+                    inline-flex w-fit shrink-0 items-center gap-3
+                    rounded-full bg-[#22264b] px-6 py-3.5
+                    text-sm font-bold text-white
+                    transition-all hover:-translate-y-1
+                    hover:bg-[#3163a2]
+                    hover:shadow-xl hover:shadow-[#22264b]/15
+                    dark:bg-[#b4d63d] dark:text-[#22264b]
+                    dark:hover:bg-[#dff090]
+                  "
+                >
+                  Explorar artículos
+                  <ArrowRight size={17} />
+                </button>
               </div>
-            ) : (
+            </motion.div>
+
+            {/* ARTÍCULO DESTACADO */}
+            {loading && (
+              <div className="h-117.5 animate-pulse rounded-[30px] bg-slate-200/80 dark:bg-white/5" />
+            )}
+
+            {!loading && topFeature && (
+              <FeaturedArticle
+                article={topFeature}
+                onOpenArticle={onOpenArticle}
+                reducedMotion={reducedMotion}
+              />
+            )}
+
+            {!loading && !topFeature && (
               <div
                 className="
-                rounded-[28px] border border-slate-200
-                bg-white p-10 text-center
-                dark:border-white/10 dark:bg-[#101a2c]
-              "
+                  rounded-[28px] border border-slate-200
+                  bg-white/90 p-10 text-center
+                  dark:border-white/10 dark:bg-[#101a2c]
+                "
               >
                 <BookOpen className="mx-auto mb-4 text-[#789900]" size={32} />
                 <h2 className="text-xl font-bold dark:text-white">
@@ -801,14 +790,15 @@ export function KnowledgeHomePage({
               </div>
             )}
 
-            {/* ARTÍCULOS SECUNDARIOS */}
             {!loading && sideArticles.length > 0 && (
               <div className="mt-6 grid gap-6 md:grid-cols-2">
-                {sideArticles.map((article) => (
+                {sideArticles.map((article, index) => (
                   <ArticleCard
                     key={article.id}
                     article={article}
                     onOpenArticle={onOpenArticle}
+                    index={index}
+                    reducedMotion={reducedMotion}
                   />
                 ))}
               </div>
@@ -816,68 +806,69 @@ export function KnowledgeHomePage({
           </div>
         </section>
 
-        {/* ARTÍCULOS */}
-        <section id="articulos" className="scroll-mt-24">
-          <div className="mx-auto max-w-360 px-5 py-16 sm:px-8 lg:px-12 lg:py-20">
-            {/* ENCABEZADO */}
-            <div
+        {/* EXPLORADOR DE ARTÍCULOS */}
+        <section
+          id="articulos"
+          className="scroll-mt-28 border-t border-[#22264b]/6 dark:border-white/6"
+        >
+          <div className="mx-auto max-w-360 px-5 py-16 sm:px-8 lg:px-12 lg:py-24">
+            <motion.div
+              variants={reveal}
+              initial={reducedMotion ? false : "hidden"}
+              whileInView="visible"
+              viewport={{ once: true, amount: 0.2 }}
+              transition={{
+                duration: reducedMotion ? 0 : 0.7,
+                ease: easeOut,
+              }}
               className="
-              mb-9 flex flex-col gap-6
-              lg:flex-row lg:items-end lg:justify-between
-            "
+                mb-10 flex flex-col gap-7
+                lg:flex-row lg:items-end lg:justify-between
+              "
             >
               <div>
                 <p
                   className="
-                  text-[10px] font-bold uppercase
-                  tracking-[0.22em] text-[#789900]
-                  dark:text-[#b4d63d]
-                "
+                    text-[10px] font-bold uppercase
+                    tracking-[0.22em] text-[#789900]
+                    dark:text-[#b4d63d]
+                  "
                 >
                   EXPLORA Y APRENDE
                 </p>
 
                 <h2
                   className="
-                  mt-3 text-3xl font-bold tracking-tight
-                  text-[#22264b] sm:text-4xl
-                  dark:text-white
-                "
+                    mt-3 text-3xl font-bold tracking-tight
+                    text-[#22264b] sm:text-4xl dark:text-white
+                  "
                 >
                   Conocimiento para crecer
                 </h2>
 
-                <p
-                  className="
-                  mt-3 max-w-xl text-sm leading-6
-                  text-slate-600 dark:text-slate-400
-                "
-                >
+                <p className="mt-3 max-w-xl text-sm leading-6 text-slate-600 dark:text-slate-400">
                   Explora contenidos sobre financiación, gestión empresarial y
                   herramientas para tomar decisiones.
                 </p>
               </div>
 
-              {/* BUSCADOR */}
-              <div className="relative w-full lg:max-w-sm">
+              <div className="relative w-full lg:max-w-md">
                 <Search
                   size={18}
-                  className="
-                    absolute left-4 top-1/2
-                    -translate-y-1/2 text-slate-400
-                  "
+                  className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400"
                 />
 
                 <input
                   type="search"
                   value={searchTerm}
                   onChange={(event) => setSearchTerm(event.target.value)}
-                  placeholder="Buscar artículos..."
+                  placeholder="¿Qué tema te interesa?"
                   aria-label="Buscar artículos"
                   className="
-                    h-12 w-full rounded-full
-                    border border-slate-200 bg-white
-                    pl-11 pr-11 text-sm text-[#22264b]
+                    h-14 w-full rounded-2xl
+                    border border-[#22264b]/10
+                    bg-[#fffefa]/90 pl-12 pr-12
+                    text-sm text-[#22264b]
                     outline-none transition-all
                     placeholder:text-slate-400
                     focus:border-[#9dbf14]
@@ -895,34 +886,22 @@ export function KnowledgeHomePage({
                     className="
                       absolute right-4 top-1/2
                       -translate-y-1/2 text-slate-400
-                      hover:text-[#789900]
+                      transition-colors hover:text-[#789900]
                     "
                   >
                     <X size={17} />
                   </button>
                 )}
               </div>
-            </div>
+            </motion.div>
 
             {/* CATEGORÍAS */}
-            <div
-              className="
-              mb-9 flex gap-2 overflow-x-auto pb-3
-              [scrollbar-width:thin]
-            "
-            >
+            <div className="mb-9 flex gap-2 overflow-x-auto pb-3 scrollbar-thin">
               <button
                 type="button"
                 onClick={() => setSelectedCategory("all")}
-                className={`
-                  shrink-0 rounded-full px-5 py-2.5
-                  text-xs font-bold transition-all
-                  ${
-                    selectedCategory === "all"
-                      ? "bg-[#22264b] text-white dark:bg-[#9dbf14] dark:text-[#22264b]"
-                      : "border border-slate-200 bg-white text-slate-600 hover:border-[#9dbf14] dark:border-white/10 dark:bg-[#101a2c] dark:text-slate-300"
-                  }
-                `}
+                aria-pressed={selectedCategory === "all"}
+                className={categoryButtonClass(selectedCategory === "all")}
               >
                 Todos los temas
               </button>
@@ -932,15 +911,10 @@ export function KnowledgeHomePage({
                   key={category.slug}
                   type="button"
                   onClick={() => setSelectedCategory(category.slug)}
-                  className={`
-                    shrink-0 rounded-full px-5 py-2.5
-                    text-xs font-bold transition-all
-                    ${
-                      selectedCategory === category.slug
-                        ? "bg-[#22264b] text-white dark:bg-[#9dbf14] dark:text-[#22264b]"
-                        : "border border-slate-200 bg-white text-slate-600 hover:border-[#9dbf14] dark:border-white/10 dark:bg-[#101a2c] dark:text-slate-300"
-                    }
-                  `}
+                  aria-pressed={selectedCategory === category.slug}
+                  className={categoryButtonClass(
+                    selectedCategory === category.slug,
+                  )}
                 >
                   {category.name}
                 </button>
@@ -948,25 +922,15 @@ export function KnowledgeHomePage({
             </div>
 
             {/* RESULTADOS */}
-            {loading ? (
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {Array.from({ length: 6 }).map((_, index) => (
-                  <div
-                    key={index}
-                    className="
-                      h-[430px] animate-pulse rounded-[22px]
-                      bg-slate-200 dark:bg-white/5
-                    "
-                  />
-                ))}
-              </div>
-            ) : filteredArticles.length > 0 ? (
+            {loading && <ArticleSkeleton />}
+
+            {!loading && filteredArticles.length > 0 && (
               <>
                 <div
                   className="
-                  mb-6 flex items-center justify-between
-                  text-xs text-slate-500 dark:text-slate-400
-                "
+                    mb-6 flex items-center justify-between
+                    text-xs text-slate-500 dark:text-slate-400
+                  "
                 >
                   <span>
                     {filteredArticles.length}{" "}
@@ -978,13 +942,10 @@ export function KnowledgeHomePage({
                   {hasFilters && (
                     <button
                       type="button"
-                      onClick={() => {
-                        setSearchTerm("");
-                        setSelectedCategory("all");
-                      }}
+                      onClick={resetFilters}
                       className="
                         font-semibold text-[#3163a2]
-                        hover:text-[#789900]
+                        transition-colors hover:text-[#789900]
                         dark:text-[#b4d63d]
                       "
                     >
@@ -993,101 +954,95 @@ export function KnowledgeHomePage({
                   )}
                 </div>
 
-                <div
-                  className="
-                  grid gap-6 sm:grid-cols-2 lg:grid-cols-3
-                "
-                >
-                  {filteredArticles.map((article) => (
+                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  {filteredArticles.map((article, index) => (
                     <ArticleCard
                       key={article.id}
                       article={article}
                       onOpenArticle={onOpenArticle}
+                      index={index}
+                      reducedMotion={reducedMotion}
                     />
                   ))}
                 </div>
               </>
-            ) : (
-              <div
-                className="
-                rounded-[26px] border border-dashed
-                border-slate-300 bg-white/60 px-6 py-16
-                text-center dark:border-white/15 dark:bg-white/[0.02]
-              "
-              >
-                <Search size={30} className="mx-auto mb-4 text-slate-400" />
+            )}
 
-                <h3 className="text-lg font-bold dark:text-white">
-                  No encontramos artículos
-                </h3>
-
-                <p
-                  className="
-                  mx-auto mt-2 max-w-md text-sm
-                  leading-6 text-slate-500 dark:text-slate-400
-                "
-                >
-                  Prueba con otra búsqueda o selecciona una categoría diferente.
-                </p>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSearchTerm("");
-                    setSelectedCategory("all");
-                  }}
-                  className="
-                    mt-5 text-sm font-bold text-[#789900]
-                    hover:underline dark:text-[#b4d63d]
-                  "
-                >
-                  Ver todos los artículos
-                </button>
-              </div>
+            {!loading && filteredArticles.length === 0 && (
+              <EmptyArticles onReset={resetFilters} />
             )}
           </div>
         </section>
 
-        {/* SECCIÓN FINANCIERA */}
+        {/* SOLUCIONES FINANCIERAS */}
         <section
           className="
-          relative isolate overflow-hidden
-          bg-[#22264b] py-16 text-white
-          dark:bg-[#0d1728]
-        "
+            relative isolate overflow-hidden
+            bg-[#22264b] py-20 text-white
+            dark:bg-[#0b1424]
+          "
         >
-          {/* DECORACIÓN */}
-          <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-            <div
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
+          >
+            <motion.div
+              animate={
+                reducedMotion
+                  ? undefined
+                  : { rotate: [0, 8, 0], scale: [1, 1.04, 1] }
+              }
+              transition={{
+                duration: 18,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
               className="
-              absolute -right-20 -top-40 size-96 rounded-full
-              border border-[#9dbf14]/20
-            "
+                absolute -right-24 -top-44 size-120
+                rounded-full border border-[#9dbf14]/20
+              "
             />
 
             <div
               className="
-              absolute -right-8 -top-28 size-72 rounded-full
-              border border-[#9dbf14]/15
-            "
+                absolute -right-5 -top-28 size-72
+                rounded-full border border-[#9dbf14]/15
+              "
             />
 
             <div
               className="
-              absolute -left-40 bottom-[-180px] size-96 rounded-full
-              bg-[#9dbf14]/10 blur-3xl
-            "
+                absolute -left-40 -bottom-45 size-96
+                rounded-full bg-[#9dbf14]/10 blur-3xl
+              "
+            />
+
+            <div
+              className="
+                absolute inset-0 opacity-40
+                bg-[linear-gradient(rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px)]
+                bg-size-[54px_54px]
+              "
             />
           </div>
 
           <div className="mx-auto max-w-360 px-5 sm:px-8 lg:px-12">
-            <div className="mb-10 max-w-2xl">
+            <motion.div
+              initial={reducedMotion ? false : { opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.2 }}
+              transition={{
+                duration: reducedMotion ? 0 : 0.7,
+                ease: easeOut,
+              }}
+              className="mb-12 max-w-2xl"
+            >
               <div
                 className="
-                inline-flex items-center gap-2
-                text-[10px] font-bold uppercase
-                tracking-[0.22em] text-[#dff090]
-              "
+                  inline-flex items-center gap-2
+                  text-[10px] font-bold uppercase
+                  tracking-[0.22em] text-[#dff090]
+                "
               >
                 <Sparkles size={14} />
                 SOLUCIONES FINANCIERAS
@@ -1095,103 +1050,91 @@ export function KnowledgeHomePage({
 
               <h2
                 className="
-                mt-4 text-3xl font-bold leading-tight
-                tracking-tight sm:text-4xl
-              "
+                  mt-5 text-3xl font-bold leading-tight
+                  tracking-tight sm:text-5xl
+                "
               >
                 Entender las alternativas es el primer paso para crecer.
               </h2>
 
-              <p
-                className="
-                mt-4 text-sm leading-7 text-slate-300
-              "
-              >
+              <p className="mt-5 text-sm leading-7 text-slate-300 sm:text-base">
                 Conoce algunas de las herramientas financieras que pueden ayudar
                 a fortalecer la liquidez y operación de tu empresa.
               </p>
-            </div>
+            </motion.div>
 
-            <div
-              className="
-              grid gap-3 sm:grid-cols-2
-              lg:grid-cols-5
-            "
-            >
-              {[
-                {
-                  name: "Factoring",
-                  description: "Convierte tus facturas en liquidez.",
-                },
-                {
-                  name: "Confirming",
-                  description: "Gestiona los pagos a proveedores.",
-                },
-                {
-                  name: "Leasing",
-                  description: "Financia activos para tu operación.",
-                },
-                {
-                  name: "Crédito rotativo",
-                  description: "Accede a un cupo de financiación.",
-                },
-                {
-                  name: "Capital de trabajo",
-                  description: "Fortalece el flujo de tu negocio.",
-                },
-              ].map((item) => (
-                <div
-                  key={item.name}
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+              {solutions.map((item, index) => (
+                <motion.div
+                  key={item.number}
+                  initial={reducedMotion ? false : { opacity: 0, y: 22 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.15 }}
+                  transition={{
+                    duration: reducedMotion ? 0 : 0.55,
+                    delay: reducedMotion ? 0 : index * 0.07,
+                    ease: easeOut,
+                  }}
+                  whileHover={reducedMotion ? undefined : { y: -6 }}
                   className="
-                    group rounded-[20px]
-                    border border-white/10 bg-white/[0.04]
-                    p-5 transition-all duration-300
-                    hover:-translate-y-1 hover:border-[#9dbf14]/50
-                    hover:bg-white/[0.08]
+                    group relative overflow-hidden
+                    rounded-[22px] border border-white/10
+                    bg-white/4.5 p-6
+                    transition-all duration-300
+                    hover:border-[#9dbf14]/50
+                    hover:bg-white/8.5
                   "
                 >
-                  <div
-                    className="
-                    mb-5 grid size-10 place-items-center
-                    rounded-xl bg-[#9dbf14]/15
-                    text-[#b4d63d]
-                  "
-                  >
-                    <ArrowUpRight size={19} />
+                  <div className="mb-7 flex items-center justify-between">
+                    <span
+                      className="
+                        grid size-10 place-items-center
+                        rounded-xl bg-[#9dbf14]/15
+                        text-[#b4d63d]
+                        transition-transform duration-300
+                        group-hover:rotate-6 group-hover:scale-110
+                      "
+                    >
+                      <ArrowUpRight size={19} />
+                    </span>
+
+                    <span className="text-xs font-semibold tracking-widest text-white/30">
+                      {item.number}
+                    </span>
                   </div>
 
-                  <h3 className="text-base font-bold">{item.name}</h3>
+                  <h3 className="text-base font-bold">{item.title}</h3>
 
-                  <p
-                    className="
-                    mt-2 text-xs leading-5 text-slate-400
-                  "
-                  >
+                  <p className="mt-3 text-xs leading-6 text-slate-400">
                     {item.description}
                   </p>
-                </div>
+
+                  <div
+                    className="
+                      absolute -bottom-12 -right-12 size-28
+                      rounded-full border border-[#9dbf14]/10
+                      transition-transform duration-500
+                      group-hover:scale-150
+                    "
+                  />
+                </motion.div>
               ))}
             </div>
 
-            {/* CIERRE */}
             <div
               className="
-              mt-12 flex flex-col items-start
-              justify-between gap-6 border-t
-              border-white/15 pt-8 sm:flex-row
-              sm:items-center
-            "
+                mt-14 flex flex-col items-start
+                justify-between gap-6 border-t
+                border-white/15 pt-9
+                sm:flex-row sm:items-center
+              "
             >
               <div>
-                <p className="text-lg font-bold">
+                <p className="text-xl font-bold">
                   ¿Buscas alternativas para tu empresa?
                 </p>
 
-                <p
-                  className="
-                  mt-1 text-sm text-slate-300
-                "
-                >
+                <p className="mt-2 text-sm text-slate-300">
                   En Aserco te acompañamos a encontrar soluciones.
                 </p>
               </div>
@@ -1202,8 +1145,9 @@ export function KnowledgeHomePage({
                   inline-flex shrink-0 items-center gap-3
                   rounded-full bg-[#9dbf14] px-6 py-3.5
                   text-sm font-bold text-[#22264b]
-                  transition-all hover:gap-5
-                  hover:bg-[#b4d63d]
+                  transition-all hover:-translate-y-1
+                  hover:gap-5 hover:bg-[#b4d63d]
+                  hover:shadow-lg hover:shadow-[#9dbf14]/20
                 "
               >
                 Conversemos
@@ -1214,44 +1158,7 @@ export function KnowledgeHomePage({
         </section>
       </main>
 
-      {/* FOOTER */}
-      <footer
-        className="
-        border-t border-slate-200/80 bg-white
-        py-7 dark:border-white/10 dark:bg-[#050b17]
-      "
-      >
-        <div
-          className="
-          mx-auto flex max-w-360 flex-col
-          items-center justify-between gap-4
-          px-5 text-center sm:flex-row sm:px-8
-          sm:text-left lg:px-12
-        "
-        >
-          <img
-            src={logoAserco}
-            alt="Aserco Smart Finance"
-            className="h-8 w-auto object-contain dark:hidden"
-          />
-
-          <img
-            src={logoAsercoDark}
-            alt=""
-            aria-hidden="true"
-            className="hidden h-8 w-auto object-contain dark:block"
-          />
-
-          <p
-            className="
-            text-xs text-slate-500 dark:text-slate-400
-          "
-          >
-            © {new Date().getFullYear()} Aserco Smart Finance. Todos los
-            derechos reservados.
-          </p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

@@ -21,7 +21,11 @@ type Props = Readonly<{
   onSwitchMode: (mode: AuthMode) => void;
   onBackHome: () => void;
   onAuthSuccess: (user: AuthUser) => void;
-  onToast?: (message: string, kind?: 'success' | 'error' | 'info', title?: string) => void;
+  onToast?: (
+    message: string,
+    kind?: "success" | "error" | "info",
+    title?: string,
+  ) => void;
 }>;
 
 const initialForm = {
@@ -31,11 +35,14 @@ const initialForm = {
   confirmPassword: "",
 };
 
-const passwordPolicyRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
+const passwordPolicyRegex =
+  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
 
 const validatePasswordStrength = (password: string) => {
   if (!passwordPolicyRegex.test(password)) {
-    throw new Error("La contraseña debe tener al menos 8 caracteres, incluir mayúsculas, minúsculas, números y un carácter especial.");
+    throw new Error(
+      "La contraseña debe tener al menos 8 caracteres, incluir mayúsculas, minúsculas, números y un carácter especial.",
+    );
   }
 };
 
@@ -102,7 +109,7 @@ export function AuthPage({
           ? submitError.message
           : "No se pudo completar la solicitud.";
 
-      onToast?.(message, 'error', 'Error de autenticación');
+      onToast?.(message, "error", "Error de autenticación");
       setError(message);
     } finally {
       setIsSubmitting(false);
@@ -113,12 +120,12 @@ export function AuthPage({
     "w-full rounded-xl border border-slate-200 bg-slate-50/70 py-3.5 pl-11 pr-4 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-200 focus:border-[#3163a2] focus:bg-white focus:ring-4 focus:ring-[#3163a2]/10 dark:border-white/10 dark:bg-[#0e1729] dark:text-white dark:placeholder:text-slate-400 dark:focus:border-[#9dbf14] dark:focus:ring-[#9dbf14]/10";
 
   return (
-    <section className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#f5f7fb] px-4 py-6 text-[#22264b] dark:bg-[#080e1c] dark:text-white sm:px-6 lg:px-8">
+    <section className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#f5f7fb] px-4 py-6 text-[#22264b] dark:!bg-[#080e1c] dark:!text-white sm:px-6 lg:px-8">
       {/* Background decoration */}
       <div className="pointer-events-none absolute -left-40 top-0 h-96 w-96 rounded-full bg-[#3163a2]/5 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-40 right-0 h-96 w-96 rounded-full bg-[#9dbf14]/10 blur-3xl" />
 
-      <div className="relative mx-auto w-full max-w-6xl overflow-hidden rounded-[28px] border border-slate-200/80 bg-white shadow-[0_24px_80px_rgba(34,38,75,0.10)] dark:border-white/[0.08] dark:bg-[#101a30] dark:shadow-[0_24px_80px_rgba(0,0,0,0.3)]">
+      <div className="relative mx-auto w-full max-w-6xl overflow-hidden rounded-[28px] border border-slate-200/80 bg-white shadow-[0_24px_80px_rgba(34,38,75,0.10)] dark:!border-white/[0.08] dark:!bg-[#101a30] dark:shadow-[0_24px_80px_rgba(0,0,0,0.3)]">
         <div className="grid min-h-[680px] lg:grid-cols-[1.02fr_0.98fr]">
           {/* LEFT PANEL */}
           <aside className="relative flex flex-col justify-between overflow-hidden bg-[#22264b] px-7 py-8 text-white sm:px-10 sm:py-10 lg:px-12 lg:py-12">
@@ -223,7 +230,7 @@ export function AuthPage({
           </aside>
 
           {/* RIGHT PANEL */}
-          <main className="flex items-center justify-center px-6 py-10 sm:px-10 lg:px-12">
+          <main className="flex items-center justify-center px-6 py-10 dark:!bg-[#101a30] sm:px-10 lg:px-12">
             <div className="w-full max-w-[390px]">
               {/* Form heading */}
               <div className="mb-8">
@@ -251,13 +258,13 @@ export function AuthPage({
               </div>
 
               {/* Mode selector */}
-              <div className="mb-7 grid grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1 dark:bg-white/[0.05]">
+              <div className="mb-7 grid grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1 dark:!bg-white/[0.05]">
                 <button
                   type="button"
                   onClick={() => onSwitchMode("login")}
                   className={`rounded-lg px-3 py-2.5 text-sm font-semibold transition-all duration-200 ${
                     isLogin
-                      ? "bg-white text-[#22264b] shadow-sm dark:bg-[#263653] dark:text-white"
+                      ? "bg-white text-[#22264b] shadow-sm dark:!bg-[#263653] dark:!text-white"
                       : "text-slate-500 hover:text-[#22264b] dark:text-slate-400 dark:hover:text-white"
                   }`}
                 >
@@ -269,7 +276,7 @@ export function AuthPage({
                   onClick={() => onSwitchMode("register")}
                   className={`rounded-lg px-3 py-2.5 text-sm font-semibold transition-all duration-200 ${
                     !isLogin
-                      ? "bg-white text-[#22264b] shadow-sm dark:bg-[#263653] dark:text-white"
+                      ? "bg-white text-[#22264b] shadow-sm dark:!bg-[#263653] dark:!text-white"
                       : "text-slate-500 hover:text-[#22264b] dark:text-slate-400 dark:hover:text-white"
                   }`}
                 >
@@ -299,7 +306,7 @@ export function AuthPage({
                           handleChange("name", event.target.value)
                         }
                         placeholder="Tu nombre completo"
-                        className={inputClass}
+                        className={`${inputClass} !bg-slate-50 !text-slate-900 placeholder:!text-slate-400 focus:!bg-white dark:!border-white/10 dark:!bg-[#0e1729] dark:!text-slate-100 dark:!caret-white dark:placeholder:!text-slate-500 dark:focus:!bg-[#0e1729]`}
                         required
                       />
                     </div>
@@ -325,7 +332,7 @@ export function AuthPage({
                         handleChange("email", event.target.value)
                       }
                       placeholder="nombre@empresa.com"
-                      className={inputClass}
+                      className={`${inputClass} !bg-slate-50 !text-slate-900 placeholder:!text-slate-400 focus:!bg-white dark:!border-white/10 dark:!bg-[#0e1729] dark:!text-slate-100 dark:!caret-white dark:placeholder:!text-slate-500 dark:focus:!bg-[#0e1729]`}
                       required
                     />
                   </div>
@@ -352,7 +359,7 @@ export function AuthPage({
                         handleChange("password", event.target.value)
                       }
                       placeholder="Ingresa tu contraseña"
-                      className={`${inputClass} pr-12`}
+                      className={`${inputClass} !bg-slate-50 !text-slate-900 placeholder:!text-slate-400 focus:!bg-white pr-12 dark:!border-white/10 dark:!bg-[#0e1729] dark:!text-slate-100 dark:!caret-white dark:placeholder:!text-slate-500 dark:focus:!bg-[#0e1729]`}
                       required
                     />
 
@@ -369,8 +376,10 @@ export function AuthPage({
                       {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
                   </div>
+
                   <p className="mt-2 text-[11px] text-slate-500 dark:text-slate-400">
-                    Mínimo 8 caracteres, con mayúsculas, minúsculas, números y un carácter especial.
+                    Mínimo 8 caracteres, con mayúsculas, minúsculas, números y
+                    un carácter especial.
                   </p>
                 </div>
 
@@ -394,7 +403,7 @@ export function AuthPage({
                           handleChange("confirmPassword", event.target.value)
                         }
                         placeholder="Repite tu contraseña"
-                        className={`${inputClass} pr-12`}
+                        className={`${inputClass} !bg-slate-50 !text-slate-900 placeholder:!text-slate-400 focus:!bg-white pr-12 dark:!border-white/10 dark:!bg-[#0e1729] dark:!text-slate-100 dark:!caret-white dark:placeholder:!text-slate-500 dark:focus:!bg-[#0e1729]`}
                         required
                       />
 

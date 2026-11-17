@@ -1,0 +1,371 @@
+/* =====================================================
+   ASERCO SMART FINANCE — SPLASH LOADER
+   ===================================================== */
+
+/* =========================================*
+
+   LOADER*
+
+*========================================= */
+
+
+
+.page-loader {
+
+  position: fixed;
+
+  inset: 0;
+
+  z-index: 9999;
+
+  display: grid;
+
+  place-items: center;
+
+
+
+  background:
+
+    radial-gradient(
+
+      circle at top left,
+
+      rgba(157, 191, 20, 0.12),
+
+      transparent 25%
+
+    ),
+
+    radial-gradient(
+
+      circle at bottom right,
+
+      rgba(49, 99, 162, 0.12),
+
+      transparent 30%
+
+    ),
+
+    #f5f7f2;
+
+
+
+  overflow: hidden;
+
+}
+
+
+
+.dark .page-loader {
+
+  background:
+
+    radial-gradient(
+
+      circle at top left,
+
+      rgba(157, 191, 20, 0.1),
+
+      transparent 25%
+
+    ),
+
+    radial-gradient(
+
+      circle at bottom right,
+
+      rgba(49, 99, 162, 0.15),
+
+      transparent 30%
+
+    ),
+
+    #050b17;
+
+}
+
+
+
+.loader-shell {
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  gap: 1.25rem;
+
+}
+
+
+
+.loader-visual {
+
+  position: relative;
+
+  width: 120px;
+
+  height: 120px;
+
+  display: grid;
+
+  place-items: center;
+
+}
+
+
+
+.loader-ring {
+
+  position: absolute;
+
+  inset: 0;
+
+  border-radius: 50%;
+
+  border: 1px solid rgba(157, 191, 20, 0.28);
+
+
+
+  box-shadow:
+
+    0 0 0 1px rgba(49, 99, 162, 0.08),
+
+    0 0 28px rgba(157, 191, 20, 0.12);
+
+
+
+  animation: ringPulse 2.1s ease-in-out infinite;
+
+}
+
+
+
+.loader-ring-inner {
+
+  inset: 18px;
+
+  border-color: rgba(49, 99, 162, 0.34);
+
+  animation-delay: 0.45s;
+
+}
+
+
+
+.loader-core {
+
+  position: relative;
+
+  width: 20px;
+
+  height: 20px;
+
+  border-radius: 50%;
+
+
+
+  background: linear-gradient(135deg, #9dbf14 0%, #bfe11f 48%, #3163a2 100%);
+
+
+
+  box-shadow:
+
+    0 0 0 10px rgba(157, 191, 20, 0.12),
+
+    0 0 22px rgba(157, 191, 20, 0.28);
+
+
+
+  animation: corePulse 1.6s ease-in-out infinite;
+
+}
+
+
+
+.loader-brand {
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  animation: logoFloat 1.5s ease-in-out infinite alternate;
+
+}
+
+
+
+.loader-logo {
+
+  display: block;
+
+  height: 72px;
+
+  width: auto;
+
+  object-fit: contain;
+
+}
+
+
+
+.loader-logo-light {
+
+  display: block;
+
+}
+
+
+
+.loader-logo-dark {
+
+  display: none;
+
+}
+
+
+
+.dark .loader-logo-light {
+
+  display: none;
+
+}
+
+
+
+.dark .loader-logo-dark {
+
+  display: block;
+
+}
+
+
+
+.loader-label {
+
+  font-size: 0.74rem;
+
+  letter-spacing: 0.22em;
+
+  text-transform: uppercase;
+
+  font-weight: 800;
+
+  color: rgba(34, 38, 75, 0.72);
+
+}
+
+
+
+.dark .loader-label {
+
+  color: rgba(255, 255, 255, 0.74);
+
+}
+
+
+
+/* =========================================*
+
+   ANIMACIONES DEL LOADER*
+
+*========================================= */
+
+
+
+@keyframes ringPulse {
+
+  0% {
+
+    transform: scale(0.82);
+
+    opacity: 0.35;
+
+  }
+
+
+
+  50% {
+
+    transform: scale(1);
+
+    opacity: 1;
+
+  }
+
+
+
+  100% {
+
+    transform: scale(1.08);
+
+    opacity: 0.3;
+
+  }
+
+}
+
+
+
+@keyframes corePulse {
+
+  0%,
+
+  100% {
+
+    transform: scale(0.92);
+
+
+
+    box-shadow:
+
+      0 0 0 10px rgba(157, 191, 20, 0.1),
+
+      0 0 18px rgba(157, 191, 20, 0.2);
+
+  }
+
+
+
+  50% {
+
+    transform: scale(1.2);
+
+
+
+    box-shadow:
+
+      0 0 0 12px rgba(157, 191, 20, 0.14),
+
+      0 0 28px rgba(49, 99, 162, 0.22);
+
+  }
+
+}
+
+
+
+@keyframes logoFloat {
+
+  0% {
+
+    transform: translateY(0) scale(1);
+
+    opacity: 0.92;
+
+  }
+
+
+
+  100% {
+
+    transform: translateY(-8px) scale(1.03);
+
+    opacity: 1;
+
+  }
+
+}

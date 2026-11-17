@@ -1,0 +1,21 @@
+/* ASERCO SMART FINANCE — estilos globales */
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@import "./variables.css";
+@import "./base.css";
+@import "./themes.css";
+@import "./backgrounds.css";
+@import "./animations.css";
+@import "./utilities.css";
+@import "./forms.css";
+@import "./responsive.css";
+
+@import "../components/organisms/styles/CTASection.css";
+@import "../components/organisms/styles/SplashLoader.css";
+@import "../components/organisms/styles/Skeleton.css";
+@import "../components/organisms/styles/Toast.css";
+@import "../components/organisms/styles/DashboardSidebar.css";
+@import "../components/organisms/styles/SidebarAction.css";
+@import "../components/atoms/styles/Brand.css";

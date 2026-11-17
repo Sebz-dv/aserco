@@ -1,0 +1,537 @@
+/* =====================================================
+   ASERCO SMART FINANCE — FONDOS, PARTÍCULAS Y HALOS
+   ===================================================== */
+
+/* =========================================*
+
+   FONDO GLOBAL - MODO CLARO*
+
+*========================================= */
+
+.app-background {
+  position: relative;
+
+  isolation: isolate;
+
+  min-height: 100vh;
+
+  overflow: clip;
+
+  --ambient-lime: rgba(157, 191, 20, 0.09);
+
+  --ambient-blue: rgba(49, 99, 162, 0.08);
+
+  background:
+    radial-gradient(
+      ellipse at 90% 5%,
+
+      rgba(157, 191, 20, 0.15),
+      transparent 30%
+    ),
+    radial-gradient(
+      ellipse at 5% 35%,
+
+      rgba(157, 191, 20, 0.09),
+      transparent 30%
+    ),
+    radial-gradient(
+      ellipse at 75% 45%,
+
+      rgba(49, 99, 162, 0.09),
+      transparent 42%
+    ),
+    radial-gradient(
+      ellipse at 45% 100%,
+
+      rgba(157, 191, 20, 0.08),
+      transparent 35%
+    ),
+    radial-gradient(
+      circle at 30% 70%,
+
+      rgba(49, 99, 162, 0.045),
+      transparent 25%
+    ),
+    linear-gradient(rgba(34, 38, 75, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(34, 38, 75, 0.025) 1px, transparent 1px),
+    linear-gradient(180deg, #f8faf7 0%, #f3f6f2 50%, #edf1ed 100%);
+
+  background-size:
+    auto,
+    auto,
+    auto,
+    auto,
+    auto,
+    52px 52px,
+    52px 52px,
+    auto;
+
+  background-attachment: scroll;
+
+  transition: background 0.5s ease;
+}
+
+/* =========================================*
+
+   FONDO GLOBAL - MODO OSCURO*
+
+*========================================= */
+
+.dark .app-background {
+  --ambient-lime: rgba(181, 216, 61, 0.14);
+
+  --ambient-blue: rgba(49, 99, 162, 0.17);
+
+  background:
+    radial-gradient(
+      ellipse at 90% 5%,
+
+      rgba(157, 191, 20, 0.19),
+      transparent 30%
+    ),
+    radial-gradient(
+      ellipse at 5% 35%,
+
+      rgba(157, 191, 20, 0.12),
+      transparent 30%
+    ),
+    radial-gradient(
+      ellipse at 75% 45%,
+
+      rgba(49, 99, 162, 0.2),
+      transparent 42%
+    ),
+    radial-gradient(
+      ellipse at 45% 100%,
+
+      rgba(49, 99, 162, 0.13),
+      transparent 35%
+    ),
+    radial-gradient(
+      circle at 30% 70%,
+
+      rgba(157, 191, 20, 0.07),
+      transparent 25%
+    ),
+    linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(180deg, #080e1c 0%, #0b1425 50%, #101a2b 100%);
+
+  background-size:
+    auto,
+    auto,
+    auto,
+    auto,
+    auto,
+    52px 52px,
+    52px 52px,
+    auto;
+}
+
+/* =========================================*
+
+   CAPA 1 - CÍRCULOS Y ANILLOS*
+
+*========================================= */
+
+.app-background::before {
+  content: "";
+
+  position: absolute;
+
+  inset: -8%;
+
+  z-index: 0;
+
+  pointer-events: none;
+
+  background-repeat: no-repeat;
+
+  will-change: transform;
+
+  background-image:
+    radial-gradient(
+      circle,
+      transparent 0 125px,
+
+      rgba(157, 191, 20, 0.2) 126px 128px,
+
+      transparent 130px 160px,
+
+      rgba(157, 191, 20, 0.1) 161px 163px,
+
+      transparent 165px
+    ),
+    radial-gradient(
+      circle,
+      transparent 0 90px,
+
+      rgba(49, 99, 162, 0.2) 91px 94px,
+
+      transparent 96px 130px,
+
+      rgba(49, 99, 162, 0.1) 131px 133px,
+
+      transparent 135px
+    ),
+    radial-gradient(
+      circle,
+      transparent 0 175px,
+
+      rgba(157, 191, 20, 0.15) 176px 178px,
+
+      transparent 180px
+    ),
+    radial-gradient(
+      circle,
+      transparent 0 65px,
+
+      rgba(49, 99, 162, 0.18) 66px 69px,
+
+      transparent 71px
+    ),
+    radial-gradient(
+      circle,
+      transparent 0 110px,
+
+      rgba(157, 191, 20, 0.17) 111px 113px,
+
+      transparent 115px
+    ),
+    radial-gradient(
+      circle,
+      transparent 0 75px,
+
+      rgba(49, 99, 162, 0.16) 76px 79px,
+
+      transparent 81px
+    ),
+    radial-gradient(
+      circle,
+      transparent 0 45px,
+
+      rgba(157, 191, 20, 0.19) 46px 48px,
+
+      transparent 50px
+    ),
+    radial-gradient(
+      circle,
+      transparent 0 145px,
+
+      rgba(49, 99, 162, 0.13) 146px 148px,
+
+      transparent 150px
+    ),
+    radial-gradient(
+      circle,
+      transparent 0 35px,
+
+      rgba(157, 191, 20, 0.18) 36px 39px,
+
+      transparent 41px
+    ),
+    radial-gradient(
+      circle,
+      transparent 0 55px,
+
+      rgba(49, 99, 162, 0.17) 56px 58px,
+
+      transparent 60px
+    ),
+    radial-gradient(circle, rgba(157, 191, 20, 0.1) 0 42px, transparent 44px),
+    radial-gradient(circle, rgba(49, 99, 162, 0.1) 0 30px, transparent 32px),
+    radial-gradient(
+      circle,
+      transparent 0 25px,
+
+      rgba(157, 191, 20, 0.2) 26px 28px,
+
+      transparent 30px
+    ),
+    radial-gradient(
+      circle,
+      transparent 0 18px,
+
+      rgba(49, 99, 162, 0.18) 19px 21px,
+
+      transparent 23px
+    ),
+    radial-gradient(circle, rgba(157, 191, 20, 0.13) 0 17px, transparent 19px),
+    radial-gradient(circle, rgba(49, 99, 162, 0.13) 0 23px, transparent 25px),
+    radial-gradient(
+      circle,
+      transparent 0 85px,
+
+      rgba(157, 191, 20, 0.13) 86px 88px,
+
+      transparent 90px
+    ),
+    radial-gradient(
+      circle,
+      transparent 0 100px,
+
+      rgba(49, 99, 162, 0.14) 101px 103px,
+
+      transparent 105px
+    ),
+    radial-gradient(circle, rgba(157, 191, 20, 0.09) 0 55px, transparent 57px),
+    radial-gradient(circle, rgba(49, 99, 162, 0.09) 0 45px, transparent 47px),
+    radial-gradient(
+      circle,
+      transparent 0 30px,
+
+      rgba(157, 191, 20, 0.17) 31px 33px,
+
+      transparent 35px
+    ),
+    radial-gradient(
+      circle,
+      transparent 0 40px,
+
+      rgba(49, 99, 162, 0.16) 41px 43px,
+
+      transparent 45px
+    ),
+    radial-gradient(
+      circle,
+      transparent 0 155px,
+
+      rgba(157, 191, 20, 0.11) 156px 158px,
+
+      transparent 160px
+    ),
+    radial-gradient(
+      circle,
+      transparent 0 115px,
+
+      rgba(49, 99, 162, 0.12) 116px 118px,
+
+      transparent 120px
+    );
+
+  background-size:
+    420px 420px,
+    350px 350px,
+    550px 550px,
+    280px 280px,
+    390px 390px,
+    320px 320px,
+    220px 220px,
+    500px 500px,
+    150px 150px,
+    200px 200px,
+    150px 150px,
+    120px 120px,
+    110px 110px,
+    90px 90px,
+    85px 85px,
+    100px 100px,
+    330px 330px,
+    360px 360px,
+    180px 180px,
+    160px 160px,
+    130px 130px,
+    140px 140px,
+    480px 480px,
+    400px 400px;
+
+  background-position:
+    95% 8%,
+    5% 28%,
+    78% 88%,
+    36% 62%,
+    85% 48%,
+    15% 85%,
+    55% 20%,
+    45% 95%,
+    25% 55%,
+    92% 70%,
+    20% 12%,
+    85% 35%,
+    50% 45%,
+    10% 90%,
+    65% 75%,
+    95% 85%,
+    8% 75%,
+    75% 15%,
+    42% 30%,
+    60% 65%,
+    30% 20%,
+    88% 55%,
+    15% 45%,
+    70% 92%;
+
+  animation: circle-rotation 45s ease-in-out infinite alternate;
+}
+
+/* =========================================*
+
+   CAPA 2 - PARTÍCULAS*
+
+*========================================= */
+
+.app-background::after {
+  content: "";
+
+  position: absolute;
+
+  inset: -5%;
+
+  z-index: 0;
+
+  pointer-events: none;
+
+  background-repeat: repeat;
+
+  background-image:
+    radial-gradient(circle, rgba(157, 191, 20, 0.45) 0 2px, transparent 3px),
+    radial-gradient(circle, rgba(49, 99, 162, 0.4) 0 2px, transparent 3px),
+    radial-gradient(circle, rgba(255, 255, 255, 0.5) 0 1px, transparent 2px);
+
+  background-size:
+    220px 240px,
+    280px 300px,
+    190px 210px;
+
+  background-position:
+    10% 15%,
+    85% 35%,
+    50% 60%;
+
+  animation: particle-float 26s ease-in-out infinite alternate;
+}
+
+/* =========================================*
+
+   CAPA 3 - HALOS DE LUZ*
+
+*========================================= */
+
+.ambient-light {
+  position: absolute;
+
+  z-index: 0;
+
+  pointer-events: none;
+
+  border-radius: 50%;
+
+  filter: blur(85px);
+
+  will-change: transform, opacity;
+}
+
+.ambient-light-one {
+  width: 520px;
+
+  height: 520px;
+
+  top: 5%;
+
+  left: -180px;
+
+  background: rgba(157, 191, 20, 0.17);
+
+  animation: halo-one 24s ease-in-out infinite alternate;
+}
+
+.ambient-light-two {
+  width: 620px;
+
+  height: 620px;
+
+  top: 25%;
+
+  right: -220px;
+
+  background: rgba(49, 99, 162, 0.16);
+
+  animation: halo-two 28s ease-in-out infinite alternate;
+}
+
+.ambient-light-three {
+  width: 480px;
+
+  height: 480px;
+
+  top: 55%;
+
+  left: 25%;
+
+  background: rgba(157, 191, 20, 0.12);
+
+  animation: halo-three 25s ease-in-out infinite alternate;
+}
+
+.ambient-light-four {
+  width: 560px;
+
+  height: 560px;
+
+  bottom: -150px;
+
+  right: 5%;
+
+  background: rgba(49, 99, 162, 0.14);
+
+  animation: halo-four 30s ease-in-out infinite alternate;
+}
+
+.ambient-light-one::after,
+.ambient-light-two::after,
+.ambient-light-three::after,
+.ambient-light-four::after {
+  content: "";
+
+  position: absolute;
+
+  inset: 20%;
+
+  border-radius: 50%;
+
+  border: 1px solid rgba(157, 191, 20, 0.13);
+
+  box-shadow:
+    0 0 45px rgba(157, 191, 20, 0.06),
+    0 0 100px rgba(49, 99, 162, 0.05);
+}
+
+/* Capas del contenido */
+
+.app-background > \*:not(.ambient-light) {
+  position: relative;
+
+  z-index: 1;
+}
+
+.app-background > .ambient-light {
+  position: absolute;
+
+  z-index: 0;
+}
+
+/* Modo oscuro */
+
+.dark .app-background::before {
+  filter: brightness(1.4) saturate(1.2);
+}
+
+.dark .app-background::after {
+  filter: brightness(1.4);
+}
+
+.dark .ambient-light-one {
+  background: rgba(181, 216, 61, 0.19);
+}
+
+.dark .ambient-light-two {
+  background: rgba(49, 99, 162, 0.22);
+}
+
+.dark .ambient-light-three {
+  background: rgba(181, 216, 61, 0.14);
+}
+
+.dark .ambient-light-four {
+  background: rgba(49, 99, 162, 0.2);
+}

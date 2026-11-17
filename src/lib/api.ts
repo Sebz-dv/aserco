@@ -8,9 +8,99 @@ export type AuthUser = {
   id: number;
   name: string;
   email: string;
+  avatarUrl?: string | null;
+  defaultAvatarUrl?: string | null;
+  hasCustomAvatar?: boolean;
   roles?: string[];
   permissions?: string[];
   dashboards?: DashboardAccess[];
+};
+
+export type CompanyRelationshipType =
+  | 'aserco_internal'
+  | 'external_user'
+  | 'company_representative'
+  | 'business_client'
+  | 'commercial_contact'
+  | 'other';
+
+export type CompanyProfile = {
+  relationshipType?: CompanyRelationshipType | null;
+  companyName?: string | null;
+  nit?: string | null;
+  position?: string | null;
+  department?: string | null;
+  businessPhone?: string | null;
+  corporateEmail?: string | null;
+  address?: string | null;
+  city?: string | null;
+  country?: string | null;
+  website?: string | null;
+  primaryContact?: string | null;
+  notes?: string | null;
+};
+
+export type UserProfile = {
+  id: number;
+  name: string;
+  email: string;
+  phone?: string | null;
+  mobile?: string | null;
+  roleTitle?: string | null;
+  department?: string | null;
+  city?: string | null;
+  country?: string | null;
+  contactNotes?: string | null;
+  commercialRelationshipType?: string | null;
+  economicSector?: string | null;
+  economicActivity?: string | null;
+  businessDescription?: string | null;
+  commercialNotes?: string | null;
+  relevantContactData?: string | null;
+  isActive?: boolean;
+  accountStatus?: string | null;
+  createdAt?: string | null;
+  avatarUrl?: string | null;
+  defaultAvatarUrl?: string | null;
+  hasCustomAvatar?: boolean;
+  company?: CompanyProfile | null;
+};
+
+export type ProfileUpdatePayload = {
+  name?: string;
+  email?: string;
+  phone?: string | null;
+  mobile?: string | null;
+  roleTitle?: string | null;
+  department?: string | null;
+  city?: string | null;
+  country?: string | null;
+  contactNotes?: string | null;
+  commercialRelationshipType?: string | null;
+  economicSector?: string | null;
+  economicActivity?: string | null;
+  businessDescription?: string | null;
+  commercialNotes?: string | null;
+  relevantContactData?: string | null;
+  company?: Partial<CompanyProfile> | null;
+};
+
+export type PasswordUpdatePayload = {
+  currentPassword: string;
+  newPassword: string;
+};
+
+export type AvatarUploadResponse = {
+  message: string;
+  avatarUrl?: string | null;
+  hasCustomAvatar?: boolean;
+  defaultAvatarUrl?: string | null;
+  profile?: UserProfile;
+};
+
+export type UserProfileResponse = {
+  message?: string;
+  profile: UserProfile;
 };
 
 export type AuthResponse = {
@@ -144,6 +234,35 @@ export type KnowledgeDashboardSummary = {
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
 
+const UNAUTHORIZED_EVENT_NAME = 'aserco:unauthorized';
+let lastUnauthorizedEventAt = 0;
+
+function notifyUnauthorized() {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  const now = Date.now();
+  if (now - lastUnauthorizedEventAt < 1500) {
+    return;
+  }
+
+  lastUnauthorizedEventAt = now;
+  window.dispatchEvent(new CustomEvent(UNAUTHORIZED_EVENT_NAME));
+}
+
+export class ApiError extends Error {
+  status: number;
+  details: unknown;
+
+  constructor(message: string, status: number, details?: unknown) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.details = details;
+  }
+}
+
 async function fetchJson<T>(url: string, options: RequestInit = {}): Promise<T> {
   const headers = new Headers(options.headers || {});
   headers.delete('Authorization');
@@ -162,11 +281,138 @@ async function fetchJson<T>(url: string, options: RequestInit = {}): Promise<T> 
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
+    if (response.status === 401) {
+      notifyUnauthorized();
+    }
+
     const message = typeof data?.message === 'string' ? data.message : 'Error al procesar la solicitud.';
-    throw new Error(message);
+    throw new ApiError(message, response.status, data);
   }
 
   return data as T;
+}
+
+async function fetchMultipart<T>(url: string, formData: FormData, method: 'POST' | 'PATCH' = 'POST') {
+  const response = await fetch(`${API_BASE_URL}${url}`, {
+    method,
+    credentials: 'include',
+    body: formData,
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    if (response.status === 401) {
+      notifyUnauthorized();
+    }
+
+    const message = typeof data?.message === 'string' ? data.message : 'Error al procesar la solicitud.';
+    throw new ApiError(message, response.status, data);
+  }
+
+  return data as T;
+}
+
+function pickString(source: Record<string, unknown>, ...keys: string[]) {
+  for (const key of keys) {
+    const value = source[key];
+    if (typeof value === 'string') return value;
+  }
+  return null;
+}
+
+function pickBoolean(source: Record<string, unknown>, ...keys: string[]) {
+  for (const key of keys) {
+    const value = source[key];
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'number') return value > 0;
+  }
+  return undefined;
+}
+
+function pickNumber(source: Record<string, unknown>, ...keys: string[]) {
+  for (const key of keys) {
+    const value = source[key];
+    if (typeof value === 'number') return value;
+    if (typeof value === 'string') {
+      const parsed = Number(value);
+      if (!Number.isNaN(parsed)) return parsed;
+    }
+  }
+  return undefined;
+}
+
+function normalizeCompanyProfile(raw: unknown): CompanyProfile | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const source = raw as Record<string, unknown>;
+
+  return {
+    relationshipType: (pickString(source, 'relationshipType', 'relationship_type', 'type') as CompanyRelationshipType | null) ?? null,
+    companyName: pickString(source, 'companyName', 'company_name', 'name'),
+    nit: pickString(source, 'nit', 'taxId', 'tax_id'),
+    position: pickString(source, 'position', 'roleTitle', 'role_title'),
+    department: pickString(source, 'department'),
+    businessPhone: pickString(source, 'businessPhone', 'business_phone', 'phone'),
+    corporateEmail: pickString(source, 'corporateEmail', 'corporate_email', 'email'),
+    address: pickString(source, 'address'),
+    city: pickString(source, 'city'),
+    country: pickString(source, 'country'),
+    website: pickString(source, 'website', 'web', 'url'),
+    primaryContact: pickString(source, 'primaryContact', 'primary_contact', 'contact'),
+    notes: pickString(source, 'notes', 'additionalInfo', 'additional_info'),
+  };
+}
+
+function normalizeUserProfile(raw: unknown): UserProfile {
+  if (!raw || typeof raw !== 'object') {
+    throw new ApiError('El backend no devolvió un perfil válido.', 500, raw);
+  }
+
+  const source = raw as Record<string, unknown>;
+  const id = pickNumber(source, 'id', 'userId', 'user_id') ?? 0;
+  const name = pickString(source, 'name', 'fullName', 'full_name') ?? '';
+  const email = pickString(source, 'email') ?? '';
+
+  return {
+    id,
+    name,
+    email,
+    phone: pickString(source, 'phone', 'phone_number'),
+    mobile: pickString(source, 'mobile', 'cellphone', 'cell_phone'),
+    roleTitle: pickString(source, 'roleTitle', 'role_title', 'position', 'job_title'),
+    department: pickString(source, 'department'),
+    city: pickString(source, 'city'),
+    country: pickString(source, 'country'),
+    contactNotes: pickString(source, 'contactNotes', 'contact_notes', 'additionalContactInfo', 'additional_contact_info'),
+    commercialRelationshipType: pickString(source, 'commercialRelationshipType', 'commercial_relationship_type'),
+    economicSector: pickString(source, 'economicSector', 'economic_sector'),
+    economicActivity: pickString(source, 'economicActivity', 'economic_activity'),
+    businessDescription: pickString(source, 'businessDescription', 'business_description'),
+    commercialNotes: pickString(source, 'commercialNotes', 'commercial_notes'),
+    relevantContactData: pickString(source, 'relevantContactData', 'relevant_contact_data'),
+    isActive: pickBoolean(source, 'isActive', 'is_active'),
+    accountStatus: pickString(source, 'accountStatus', 'account_status', 'status'),
+    createdAt: pickString(source, 'createdAt', 'created_at'),
+    avatarUrl: pickString(source, 'avatarUrl', 'avatar_url'),
+    defaultAvatarUrl: pickString(source, 'defaultAvatarUrl', 'default_avatar_url'),
+    hasCustomAvatar: pickBoolean(source, 'hasCustomAvatar', 'has_custom_avatar'),
+    company: normalizeCompanyProfile(source.company ?? source.companyProfile ?? source.company_profile),
+  };
+}
+
+function normalizeUserProfileResponse(raw: unknown): UserProfileResponse {
+  if (!raw || typeof raw !== 'object') {
+    throw new ApiError('Respuesta de perfil inválida.', 500, raw);
+  }
+
+  const source = raw as Record<string, unknown>;
+  const profileRaw = source.profile ?? source.user ?? source.data ?? source.result;
+  const profile = normalizeUserProfile(profileRaw);
+  const message = typeof source.message === 'string' ? source.message : undefined;
+
+  return {
+    message,
+    profile,
+  };
 }
 
 export async function registerUser(payload: { name: string; email: string; password: string }) {
@@ -271,6 +517,66 @@ export async function updateRolePermissions(_token: string | undefined, roleName
   return fetchJson<{ message: string; role: { roleName: string; permissions: string[] } }>(`/admin/roles/${encodeURIComponent(roleName)}/permissions`, {
     method: 'PATCH',
     body: JSON.stringify({ permissions }),
+  });
+}
+
+export async function getMyUserProfile() {
+  const response = await fetchJson<unknown>('/users/me/profile', {
+    method: 'GET',
+  });
+  return normalizeUserProfileResponse(response);
+}
+
+export async function updateMyUserProfile(payload: ProfileUpdatePayload) {
+  const response = await fetchJson<unknown>('/users/me/profile', {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+  return normalizeUserProfileResponse(response);
+}
+
+export async function updateMyPassword(payload: PasswordUpdatePayload) {
+  return fetchJson<{ message: string }>('/users/me/password', {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function uploadMyAvatar(file: File) {
+  const formData = new FormData();
+  formData.append('avatar', file);
+  return fetchMultipart<AvatarUploadResponse>('/users/me/avatar', formData, 'POST');
+}
+
+export async function deleteMyAvatar() {
+  return fetchJson<AvatarUploadResponse>('/users/me/avatar', {
+    method: 'DELETE',
+  });
+}
+
+export async function getAdminUserProfile(_token: string | undefined, userId: number) {
+  const response = await fetchJson<unknown>(`/admin/users/${userId}/profile`, {
+    method: 'GET',
+  });
+  return normalizeUserProfileResponse(response);
+}
+
+export async function updateAdminUserProfile(_token: string | undefined, userId: number, payload: ProfileUpdatePayload) {
+  const response = await fetchJson<unknown>(`/admin/users/${userId}/profile`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+  return normalizeUserProfileResponse(response);
+}
+
+export async function resetAdminUserPassword(
+  _token: string | undefined,
+  userId: number,
+  payload: { newPassword: string },
+) {
+  return fetchJson<{ message: string }>(`/admin/users/${userId}/reset-password`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
   });
 }
 

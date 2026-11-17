@@ -1,0 +1,10 @@
+/* ASERCO SMART FINANCE — formularios */
+.dark input, .dark select, .dark textarea { color: #f1f5f9 !important; caret-color: #fff; color-scheme: dark; }
+.dark input::placeholder, .dark textarea::placeholder { color: #94a3b8 !important; opacity: 1; }
+.dark select option { color: #f1f5f9; background-color: #0e1729; }
+.dark input:-webkit-autofill, .dark input:-webkit-autofill:hover, .dark input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #f1f5f9 !important;
+  caret-color: #fff;
+  box-shadow: 0 0 0 1000px #0e1729 inset;
+  transition: background-color 9999s ease-in-out 0s;
+}

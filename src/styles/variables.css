@@ -1,0 +1,17 @@
+/* ASERCO SMART FINANCE — variables de marca */
+:root {
+  --font-primary: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --color-lime: 157, 191, 20;
+  --color-blue: 49, 99, 162;
+  --background-light: #f8faf7;
+  --background-dark: #080e1c;
+  --scroll-offset: 110px;
+
+  --brand-lime: #9dbf14;
+  --brand-lime-soft: #edf5c5;
+  --brand-blue: #3163a2;
+  --brand-navy: #22264b;
+  --brand-white: #ffffff;
+  --brand-surface: #f5f7f2;
+  --brand-surface-strong: #eef3ff;
+}

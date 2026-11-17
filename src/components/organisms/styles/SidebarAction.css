@@ -1,0 +1,809 @@
+/* =====================================================
+   ASERCO SMART FINANCE — SIDEBAR ACTION
+   ===================================================== */
+
+/* =========================================================*
+
+   ASERCO SMART FINANCE — SIDEBAR ACTION*
+
+   ========================================================= */
+
+
+
+.aserco-sidebar-action {
+
+  --action-transition: 200ms cubic-bezier(0.22, 1, 0.36, 1);
+
+
+
+  position: relative;
+
+  isolation: isolate;
+
+
+
+  display: flex;
+
+  align-items: center;
+
+
+
+  width: 100%;
+
+  min-width: 0;
+
+  min-height: 40px;
+
+
+
+  gap: 7px;
+
+  padding: 7px 9px;
+
+
+
+  overflow: hidden;
+
+
+
+  border: 1px solid transparent;
+
+  border-radius: 10px;
+
+
+
+  background: transparent;
+
+  color: var(--sidebar-muted, #64748b);
+
+
+
+  text-align: left;
+
+  cursor: pointer;
+
+
+
+  transition:
+
+    background-color var(--action-transition),
+
+    color var(--action-transition),
+
+    transform var(--action-transition);
+
+}
+
+
+
+/* =========================================================*
+
+   HOVER*
+
+   ========================================================= */
+
+
+
+.aserco-sidebar-action:not(.is-active):not(.is-danger):hover {
+
+  background: var(--sidebar-surface-hover, #eef3ff);
+
+  color: var(--sidebar-text, #22264b);
+
+  transform: translateX(1px);
+
+}
+
+
+
+/* =========================================================*
+
+   ACTIVE — SIN BORDE NI SOMBRA*
+
+   ========================================================= */
+
+
+
+.aserco-sidebar-action.is-active,
+
+.aserco-sidebar-action.is-active:hover,
+
+.aserco-sidebar-action.is-collapsed.is-active {
+
+  background: rgba(157, 191, 20, 0.10);
+
+
+
+  border: 1px solid transparent;
+
+  border-color: transparent;
+
+
+
+  outline: none;
+
+  box-shadow: none;
+
+
+
+  color: #22264b;
+
+  transform: none;
+
+}
+
+
+
+.aserco-sidebar-action.is-active:hover {
+
+  background: rgba(157, 191, 20, 0.16);
+
+}
+
+
+
+/* Tema oscuro */
+
+
+
+.dark .aserco-sidebar-action.is-active,
+
+.dark .aserco-sidebar-action.is-collapsed.is-active {
+
+  background: rgba(181, 216, 61, 0.12);
+
+  border: 1px solid transparent;
+
+  border-color: transparent;
+
+  outline: none;
+
+  box-shadow: none;
+
+  color: #dff090;
+
+}
+
+
+
+.dark .aserco-sidebar-action.is-active:hover {
+
+  background: rgba(181, 216, 61, 0.18);
+
+}
+
+
+
+/* El indicador lateral no se utiliza */
+
+
+
+.aserco-sidebar-action-indicator {
+
+  display: none !important;
+
+}
+
+
+
+/* =========================================================*
+
+   ICON*
+
+   ========================================================= */
+
+
+
+.aserco-sidebar-action-icon {
+
+  position: relative;
+
+  z-index: 1;
+
+
+
+  display: grid;
+
+  place-items: center;
+
+
+
+  flex: 0 0 30px;
+
+  width: 30px;
+
+  height: 30px;
+
+
+
+  border-radius: 8px;
+
+
+
+  background: transparent;
+
+  color: var(--sidebar-muted, #64748b);
+
+
+
+  box-shadow: none;
+
+
+
+  transition:
+
+    color var(--action-transition),
+
+    transform var(--action-transition);
+
+}
+
+
+
+.aserco-sidebar-action:not(.is-active):hover
+
+  .aserco-sidebar-action-icon {
+
+  color: var(--sidebar-blue, #3163a2);
+
+  transform: scale(1.04);
+
+}
+
+
+
+/* Icono activo */
+
+
+
+.aserco-sidebar-action.is-active .aserco-sidebar-action-icon {
+
+  background: transparent;
+
+  color: #789900;
+
+  box-shadow: none;
+
+  transform: none;
+
+}
+
+
+
+.dark .aserco-sidebar-action.is-active .aserco-sidebar-action-icon {
+
+  background: transparent;
+
+  color: #b5d83d;
+
+}
+
+
+
+/* =========================================================*
+
+   LABEL*
+
+   ========================================================= */
+
+
+
+.aserco-sidebar-action-label {
+
+  position: relative;
+
+  z-index: 1;
+
+
+
+  flex: 1;
+
+  min-width: 0;
+
+
+
+  overflow: hidden;
+
+
+
+  white-space: nowrap;
+
+  text-overflow: ellipsis;
+
+
+
+  font-size: 12.5px;
+
+  font-weight: 550;
+
+  line-height: 1.35;
+
+
+
+  opacity: 1;
+
+  transform: translateX(0);
+
+
+
+  transition:
+
+    max-width 220ms ease,
+
+    opacity 160ms ease,
+
+    transform 220ms ease;
+
+}
+
+
+
+.aserco-sidebar-action.is-active .aserco-sidebar-action-label {
+
+  font-weight: 700;
+
+}
+
+
+
+/* =========================================================*
+
+   SIDEBAR COLLAPSED*
+
+   ========================================================= */
+
+
+
+.aserco-sidebar-action.is-collapsed {
+
+  justify-content: center;
+
+
+
+  gap: 0;
+
+  min-height: 42px;
+
+
+
+  padding: 5px 0;
+
+
+
+  border-radius: 10px;
+
+}
+
+
+
+.aserco-sidebar-action.is-collapsed .aserco-sidebar-action-label {
+
+  max-width: 0;
+
+  opacity: 0;
+
+  transform: translateX(-5px);
+
+}
+
+
+
+.aserco-sidebar-action.is-collapsed .aserco-sidebar-action-icon {
+
+  flex-basis: 32px;
+
+  width: 32px;
+
+  height: 32px;
+
+}
+
+
+
+/* =========================================================*
+
+   NESTED ACTIONS*
+
+   ========================================================= */
+
+
+
+.aserco-sidebar-action.is-nested {
+
+  min-height: 36px;
+
+
+
+  gap: 6px;
+
+  padding: 5px 8px;
+
+
+
+  border-radius: 9px;
+
+}
+
+
+
+.aserco-sidebar-action.is-nested .aserco-sidebar-action-icon {
+
+  flex-basis: 27px;
+
+  width: 27px;
+
+  height: 27px;
+
+}
+
+
+
+/* =========================================================*
+
+   AVATAR*
+
+   ========================================================= */
+
+
+
+.aserco-sidebar-avatar {
+
+  display: block;
+
+
+
+  width: 25px;
+
+  height: 25px;
+
+
+
+  border-radius: 50%;
+
+
+
+  object-fit: cover;
+
+
+
+  border: 1px solid rgba(49, 99, 162, 0.16);
+
+  box-shadow: 0 2px 6px rgba(34, 38, 75, 0.10);
+
+}
+
+
+
+.dark .aserco-sidebar-avatar {
+
+  border-color: rgba(255, 255, 255, 0.2);
+
+}
+
+
+
+/* =========================================================*
+
+   DANGER ACTION*
+
+   ========================================================= */
+
+
+
+.aserco-sidebar-action.is-danger {
+
+  color: var(--sidebar-muted, #64748b);
+
+}
+
+
+
+.aserco-sidebar-action.is-danger:hover {
+
+  background: rgba(220, 38, 38, 0.07);
+
+
+
+  border-color: transparent;
+
+
+
+  color: #dc2626;
+
+  transform: translateX(1px);
+
+}
+
+
+
+.aserco-sidebar-action.is-danger:hover
+
+  .aserco-sidebar-action-icon {
+
+  color: #dc2626;
+
+}
+
+
+
+.dark .aserco-sidebar-action.is-danger:hover {
+
+  background: rgba(239, 68, 68, 0.09);
+
+  color: #fca5a5;
+
+}
+
+
+
+.dark .aserco-sidebar-action.is-danger:hover
+
+  .aserco-sidebar-action-icon {
+
+  color: #fca5a5;
+
+}
+
+
+
+/* =========================================================*
+
+   ACCESSIBILITY*
+
+   ========================================================= */
+
+
+
+.aserco-sidebar-action:focus-visible {
+
+  outline: 2px solid var(--sidebar-accent, #9dbf14);
+
+  outline-offset: 3px;
+
+}
+
+
+
+.aserco-sidebar-action:active {
+
+  transform: scale(0.985);
+
+}
+
+
+
+/* =========================================================*
+
+   TOOLTIP*
+
+   ========================================================= */
+
+
+
+.aserco-sidebar-tooltip {
+
+  position: fixed;
+
+  z-index: 99999;
+
+
+
+  display: inline-flex;
+
+  align-items: center;
+
+
+
+  min-height: 35px;
+
+  padding: 8px 12px;
+
+
+
+  border: 1px solid;
+
+  border-radius: 9px;
+
+
+
+  font-family: var(--font-primary, sans-serif);
+
+  font-size: 11px;
+
+  font-weight: 700;
+
+  letter-spacing: 0.015em;
+
+
+
+  white-space: nowrap;
+
+  pointer-events: none;
+
+
+
+  transform: translateY(-50%);
+
+  transform-origin: left center;
+
+
+
+  animation: sidebar-tooltip-enter 160ms
+
+    cubic-bezier(0.22, 1, 0.36, 1) both;
+
+}
+
+
+
+/* Tooltip claro */
+
+
+
+.aserco-sidebar-tooltip.is-light {
+
+  color: #22264b;
+
+  background: rgba(255, 255, 255, 0.97);
+
+  border-color: rgba(34, 38, 75, 0.1);
+
+
+
+  box-shadow:
+
+    0 8px 25px rgba(34, 38, 75, 0.12),
+
+    0 2px 5px rgba(34, 38, 75, 0.04);
+
+}
+
+
+
+/* Tooltip oscuro */
+
+
+
+.aserco-sidebar-tooltip.is-dark {
+
+  color: #f8fafc;
+
+  background: rgba(17, 29, 53, 0.98);
+
+  border-color: rgba(255, 255, 255, 0.09);
+
+
+
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+
+}
+
+
+
+/* Flecha */
+
+
+
+.aserco-sidebar-tooltip-arrow {
+
+  position: absolute;
+
+
+
+  left: -5px;
+
+  top: 50%;
+
+
+
+  width: 9px;
+
+  height: 9px;
+
+
+
+  border-left: 1px solid;
+
+  border-bottom: 1px solid;
+
+
+
+  transform: translateY(-50%) rotate(45deg);
+
+}
+
+
+
+.aserco-sidebar-tooltip.is-light
+
+  .aserco-sidebar-tooltip-arrow {
+
+  background: #fff;
+
+  border-color: rgba(34, 38, 75, 0.1);
+
+}
+
+
+
+.aserco-sidebar-tooltip.is-dark
+
+  .aserco-sidebar-tooltip-arrow {
+
+  background: #111d35;
+
+  border-color: rgba(255, 255, 255, 0.09);
+
+}
+
+
+
+/* =========================================================*
+
+   TOOLTIP ANIMATION*
+
+   ========================================================= */
+
+
+
+@keyframes sidebar-tooltip-enter {
+
+  from {
+
+    opacity: 0;
+
+    transform: translate(-5px, -50%) scale(0.96);
+
+  }
+
+
+
+  to {
+
+    opacity: 1;
+
+    transform: translate(0, -50%) scale(1);
+
+  }
+
+}
+
+
+
+/* =========================================================*
+
+   REDUCED MOTION*
+
+   ========================================================= */
+
+
+
+@media (prefers-reduced-motion: reduce) {
+
+  .aserco-sidebar-action,
+
+  .aserco-sidebar-action-icon,
+
+  .aserco-sidebar-action-label,
+
+  .aserco-sidebar-tooltip {
+
+    transition: none !important;
+
+    animation: none !important;
+
+  }
+
+}
+
+/* Estado activo: fondo sutil, sin borde ni sombra */
+.aserco-sidebar-action.is-active,
+.aserco-sidebar-action.is-active:hover,
+.aserco-sidebar-action.is-collapsed.is-active,
+.dark .aserco-sidebar-action.is-active,
+.dark .aserco-sidebar-action.is-active:hover,
+.dark .aserco-sidebar-action.is-collapsed.is-active {
+  border-color: transparent;
+  outline: none;
+  box-shadow: none;
+}

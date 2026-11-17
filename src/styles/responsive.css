@@ -1,0 +1,67 @@
+/* =====================================================
+   ASERCO SMART FINANCE — RESPONSIVE GLOBAL
+   ===================================================== */
+
+/* =========================================*
+
+   RESPONSIVE - PANTALLAS GRANDES*
+
+*========================================= */
+
+
+
+@media (min-width: 1440px) {
+
+  html {
+
+    font-size: 17px;
+
+  }
+
+
+
+  .hero-logo {
+
+    height: 92px;
+
+  }
+
+
+
+  .section-kicker {
+
+    font-size: 0.72rem;
+
+    letter-spacing: 0.18em;
+
+  }
+
+}
+
+
+
+@media (min-width: 1800px) {
+
+  html {
+
+    font-size: 18px;
+
+  }
+
+
+
+  .hero-logo {
+
+    height: 104px;
+
+  }
+
+
+
+  .section-kicker {
+
+    font-size: 0.76rem;
+
+  }
+
+}

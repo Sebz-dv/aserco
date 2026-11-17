@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { DashboardNavbar } from '../components/organisms/DashboardNavbar';
 import { DashboardSidebar, type DashboardSection } from '../components/organisms/DashboardSidebar';
@@ -24,6 +24,7 @@ import { AdminOverviewPage } from './AdminOverviewPage';
 import { AdminRolesPage } from './AdminRolesPage';
 import { AdminUsersPage } from './AdminUsersPage';
 import { KnowledgeAdminPage } from './KnowledgeAdminPage';
+import { ProfileModuleRouter } from './profile/ProfileModuleRouter';
 
 type Props = Readonly<{
   dark: boolean;
@@ -37,7 +38,7 @@ type Props = Readonly<{
 
 export function AdminPage({ dark, user, onBackHome, onLogout, onConfirmLogout, onToggleTheme, onToast }: Props) {
   const [users, setUsers] = useState<AdminUser[]>([]);
-  const [roles, setRoles] = useState<string[]>(['admin', 'super_admin']);
+  const [roles, setRoles] = useState<string[]>([]);
   const [availableModules, setAvailableModules] = useState<AdminModule[]>([]);
   const [availablePermissions, setAvailablePermissions] = useState<PermissionItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,62 +46,206 @@ export function AdminPage({ dark, user, onBackHome, onLogout, onConfirmLogout, o
   const [saving, setSaving] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [section, setSection] = useState<DashboardSection>('overview');
-  const [rolePermissions, setRolePermissions] = useState<Record<string, string[]>>({
-    super_admin: [
-      'dashboard.view',
-      'dashboard.metrics',
-      'users.read',
-      'users.create',
-      'users.edit',
-      'users.delete',
-      'roles.view',
-      'roles.manage',
-      'permissions.manage',
-      'marketing.view',
-      'marketing.create',
-      'marketing.edit',
-      'customers.view',
-      'customers.create',
-      'customers.edit',
-      'finance.view',
-      'finance.edit',
-    ],
-    admin: [
-      'dashboard.view',
-      'dashboard.metrics',
-      'users.read',
-      'users.create',
-      'users.edit',
-      'users.delete',
-      'roles.view',
-      'roles.manage',
-      'permissions.manage',
-      'marketing.view',
-      'marketing.create',
-      'marketing.edit',
-      'customers.view',
-      'customers.create',
-      'customers.edit',
-      'finance.view',
-      'finance.edit',
-    ],
-    marketing: ['dashboard.view', 'dashboard.metrics', 'marketing.view', 'marketing.create', 'marketing.edit'],
-    comercial: ['dashboard.view', 'customers.view', 'customers.create', 'customers.edit'],
-    contabilidad: ['dashboard.view', 'finance.view', 'finance.edit'],
-  });
+  const [selectedProfileUser, setSelectedProfileUser] = useState<AdminUser | null>(null);
+  const [rolePermissions, setRolePermissions] = useState<Record<string, string[]>>({});
 
-  const isSuperAdmin = !!user && (user.roles?.includes('super_admin') || user.permissions?.includes('dashboard.view') || user.permissions?.includes('dashboard.metrics'));
-  const canManageKnowledge = !!user && (user.roles?.includes('editor') || (user.permissions ?? []).some((permission) => permission.startsWith('knowledge.')));
-  const hasPermission = (permission: string) =>
-    !!user && ((user.permissions ?? []).includes(permission) || (user.roles ?? []).some((role) => (rolePermissions[role] ?? []).includes(permission)));
-  const canAccessDashboard = hasPermission('dashboard.view') || hasPermission('dashboard.metrics') || isSuperAdmin;
+  const isSuperAdmin = Boolean(user?.roles?.includes('super_admin'));
+  const isSuperAdminAccount = (account: AdminUser) =>
+    (account.roles ?? []).some((role) => role.trim().toLowerCase() === 'super_admin');
+  const accessManagedUsers = users.filter((account) => !isSuperAdminAccount(account));
+
+  const effectivePermissions = useMemo(() => {
+    const permissions = new Set<string>();
+
+    for (const permission of user?.permissions ?? []) {
+      permissions.add(permission);
+    }
+
+    for (const role of user?.roles ?? []) {
+      for (const permission of rolePermissions[role] ?? []) {
+        permissions.add(permission);
+      }
+    }
+
+    return permissions;
+  }, [user?.permissions, user?.roles, rolePermissions]);
+
+  const hasPermissionPrefix = (prefixes: string[]) => {
+    for (const permission of effectivePermissions) {
+      const normalizedPermission = permission.toLowerCase();
+      if (
+        prefixes.some(
+          (prefix) =>
+            normalizedPermission === prefix
+            || normalizedPermission.startsWith(`${prefix}.`),
+        )
+      ) {
+        return true;
+      }
+    }
+
+    return false;
+  };
+
+  const canManageUsers = hasPermissionPrefix(['users', 'admin.users']);
+  const canManageRoles = hasPermissionPrefix([
+    'roles',
+    'admin.roles',
+    'permissions',
+    'admin.permissions',
+    'modules',
+    'admin.modules',
+  ]);
+  const canManageKnowledge = hasPermissionPrefix([
+    'knowledge',
+    'admin.knowledge',
+    'editorial',
+  ]);
+
+  const canAccessDashboard =
+    hasPermissionPrefix(['dashboard'])
+    || canManageKnowledge
+    || canManageUsers
+    || canManageRoles
+    || isSuperAdmin;
+
+  const getProfileUserIdFromHash = (hash: string) => {
+    const [path, query] = hash.split('?');
+    if (!path.toLowerCase().startsWith('#admin/perfil')) {
+      return null;
+    }
+
+    const params = new URLSearchParams(query ?? '');
+    const rawValue = params.get('userId');
+    if (!rawValue) {
+      return null;
+    }
+
+    const parsed = Number(rawValue);
+    return Number.isFinite(parsed) ? parsed : null;
+  };
+
+  const withProfileUserId = (baseHash: string, profileUserId: number | null) => {
+    const [path] = baseHash.split('?');
+
+    if (!profileUserId) {
+      return path;
+    }
+
+    return `${path}?userId=${profileUserId}`;
+  };
+
+  const getSectionFromHash = (hash: string): DashboardSection => {
+    const normalizedHash = hash.toLowerCase();
+
+    if (normalizedHash.startsWith('#admin/usuarios')) {
+      return 'users';
+    }
+
+    if (normalizedHash.startsWith('#admin/roles')) {
+      return 'roles';
+    }
+
+    if (normalizedHash.startsWith('#admin/conocimiento')) {
+      return 'knowledge';
+    }
+
+    if (normalizedHash === '#admin/perfil' || normalizedHash.startsWith('#admin/perfil/') || normalizedHash.startsWith('#perfil')) {
+      return 'profile';
+    }
+
+    return 'overview';
+  };
+
+  const setHashIfNeeded = (nextHash: string) => {
+    if (window.location.hash !== nextHash) {
+      window.location.hash = nextHash;
+    }
+  };
+
+  const navigateToSection = (
+    nextSection: DashboardSection,
+    options?: { preserveSelectedProfileUser?: boolean; profileHash?: string },
+  ) => {
+    if (nextSection !== 'profile' && selectedProfileUser) {
+      setSelectedProfileUser(null);
+    }
+
+    if (nextSection === 'profile') {
+      if (!options?.preserveSelectedProfileUser) {
+        setSelectedProfileUser(null);
+      }
+
+      setSection('profile');
+
+      const baseProfileHash = options?.profileHash
+        ?? (window.location.hash.startsWith('#admin/perfil') ? window.location.hash : '#admin/perfil');
+
+      const targetProfileUserId = options?.preserveSelectedProfileUser
+        ? selectedProfileUser?.id ?? getProfileUserIdFromHash(window.location.hash)
+        : null;
+
+      const nextHash = withProfileUserId(baseProfileHash, targetProfileUserId ?? null);
+
+      setHashIfNeeded(nextHash);
+      return;
+    }
+
+    setSection(nextSection);
+
+    if (nextSection === 'users') {
+      setHashIfNeeded('#admin/usuarios');
+      return;
+    }
+
+    if (nextSection === 'roles') {
+      setHashIfNeeded('#admin/roles');
+      return;
+    }
+
+    if (nextSection === 'knowledge') {
+      setHashIfNeeded('#admin/conocimiento');
+      return;
+    }
+
+    setHashIfNeeded('#admin');
+  };
 
   useEffect(() => {
-    const hash = window.location.hash;
-    if (hash === '#admin/conocimiento') {
-      setSection('knowledge');
-    }
+    const syncSectionWithHash = () => {
+      setSection(getSectionFromHash(window.location.hash));
+    };
+
+    syncSectionWithHash();
+
+    window.addEventListener('hashchange', syncSectionWithHash);
+    return () => window.removeEventListener('hashchange', syncSectionWithHash);
   }, []);
+
+  useEffect(() => {
+    if (section !== 'profile') {
+      return;
+    }
+
+    const profileUserId = getProfileUserIdFromHash(window.location.hash);
+
+    if (!profileUserId) {
+      return;
+    }
+
+    const resolvedUser = accessManagedUsers.find((item) => item.id === profileUserId) ?? null;
+
+    if (!resolvedUser) {
+      return;
+    }
+
+    setSelectedProfileUser((current) => {
+      if (current?.id === resolvedUser.id) {
+        return current;
+      }
+      return resolvedUser;
+    });
+  }, [section, accessManagedUsers]);
 
   useEffect(() => {
     if (!canAccessDashboard) {
@@ -111,45 +256,62 @@ export function AdminPage({ dark, user, onBackHome, onLogout, onConfirmLogout, o
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [usersResponse, rolesResponse, modulesResponse, permissionsResponse] = await Promise.all([
-          getAdminUsers(),
-          getAdminRoles(),
-          getAdminModules(),
-          getAdminPermissions(),
-        ]);
-
-        setUsers(usersResponse.users);
-        setAvailableModules(modulesResponse.modules);
-        setAvailablePermissions(permissionsResponse.permissions);
-        setRoles([
-          ...new Set([
-            'admin',
-            'super_admin',
-            ...rolesResponse.roles.map((role) => role.name),
-          ]),
-        ]);
-
-        const resolvedRoles = [
-          ...new Set([
-            'admin',
-            'super_admin',
-            ...rolesResponse.roles.map((role) => role.name),
-          ]),
-        ];
-
-        const rolePermissionResults = await Promise.all(
-          resolvedRoles.map(async (roleName) => ({
-            roleName,
-            permissions: (await getRolePermissions(undefined, roleName)).permissions ?? [],
-          })),
-        );
-
-        const nextPermissions: Record<string, string[]> = {};
-        for (const { roleName, permissions } of rolePermissionResults) {
-          nextPermissions[roleName] = permissions;
+        if (canManageUsers) {
+          const usersResponse = await getAdminUsers();
+          setUsers(usersResponse.users);
+        } else {
+          setUsers([]);
         }
 
-        setRolePermissions(nextPermissions);
+        if (canManageRoles) {
+          const [rolesResponse, modulesResponse, permissionsResponse] = await Promise.all([
+            getAdminRoles(),
+            getAdminModules(),
+            getAdminPermissions(),
+          ]);
+
+          setAvailableModules(modulesResponse.modules);
+          setAvailablePermissions(permissionsResponse.permissions);
+
+          const resolvedRoles = [
+            ...new Set([
+              'admin',
+              'super_admin',
+              ...rolesResponse.roles.map((role) => role.name),
+            ]),
+          ];
+
+          setRoles(resolvedRoles);
+
+          const rolePermissionResults = await Promise.all(
+            resolvedRoles.map(async (roleName) => {
+              try {
+                const response = await getRolePermissions(undefined, roleName);
+                return {
+                  roleName,
+                  permissions: response.permissions ?? [],
+                };
+              } catch {
+                return {
+                  roleName,
+                  permissions: [],
+                };
+              }
+            }),
+          );
+
+          const nextPermissions: Record<string, string[]> = {};
+          for (const { roleName, permissions } of rolePermissionResults) {
+            nextPermissions[roleName] = permissions;
+          }
+
+          setRolePermissions(nextPermissions);
+        } else {
+          setRoles([]);
+          setAvailableModules([]);
+          setAvailablePermissions([]);
+          setRolePermissions({});
+        }
       } catch (fetchError) {
         setError(fetchError instanceof Error ? fetchError.message : 'No se pudieron cargar los usuarios.');
       } finally {
@@ -158,7 +320,7 @@ export function AdminPage({ dark, user, onBackHome, onLogout, onConfirmLogout, o
     };
 
     fetchData();
-  }, [canAccessDashboard]);
+  }, [canAccessDashboard, canManageUsers, canManageRoles]);
 
   const handleToggleStatus = async (targetUser: AdminUser) => {
     setSaving(true);
@@ -327,16 +489,25 @@ export function AdminPage({ dark, user, onBackHome, onLogout, onConfirmLogout, o
           sidebarOpen={sidebarOpen}
           activeSection={section}
           showKnowledge={canManageKnowledge}
+          showUsersOption={canManageUsers}
+          showRolesOption={canManageRoles}
           onToggleSidebar={() => setSidebarOpen((value) => !value)}
           onBackHome={onBackHome}
           onLogout={onLogout}
           onConfirmLogout={onConfirmLogout}
-          onOpenOverview={() => setSection('overview')}
-          onOpenUsers={() => setSection('users')}
-          onOpenRoles={() => setSection('roles')}
-          onOpenKnowledge={() => setSection('knowledge')}
-          onMouseEnter={() => setSidebarOpen(true)}
-          onMouseLeave={() => setSidebarOpen(false)}
+          onOpenOverview={() => navigateToSection('overview')}
+          onOpenUsers={() => navigateToSection('users')}
+          onOpenRoles={() => navigateToSection('roles')}
+          onOpenKnowledge={() => navigateToSection('knowledge')}
+          onOpenProfile={() => {
+            navigateToSection('profile', {
+              preserveSelectedProfileUser: false,
+              profileHash: '#admin/perfil',
+            });
+          }}
+          onOpenProfileSection={() => {
+            navigateToSection('profile', { preserveSelectedProfileUser: false });
+          }}
         />
 
         <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -345,26 +516,42 @@ export function AdminPage({ dark, user, onBackHome, onLogout, onConfirmLogout, o
           <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-5 md:p-6">
             {section === 'overview' ? (
               <AdminOverviewPage
-                users={users}
+                users={accessManagedUsers}
                 isSuperAdmin={Boolean(isSuperAdmin)}
                 userName={user?.name || 'Administrador'}
-                onOpenUsers={() => setSection('users')}
+                canManageUsers={canManageUsers}
+                canManageRoles={canManageRoles}
+                canManageKnowledge={canManageKnowledge}
+                onOpenUsers={() => {
+                  if (canManageUsers) {
+                    navigateToSection('users');
+                  }
+                }}
               />
             ) : section === 'roles' ? (
-              <AdminRolesPage
-                roles={roles}
-                rolePermissions={rolePermissions}
-                availableModules={availableModules}
-                availablePermissions={availablePermissions}
-                onTogglePermission={handleToggleRolePermission}
-                onCreateModule={handleCreateModule}
-                onCreatePermission={handleCreatePermission}
-              />
+              canManageRoles ? (
+                <AdminRolesPage
+                  roles={roles}
+                  rolePermissions={rolePermissions}
+                  availableModules={availableModules}
+                  availablePermissions={availablePermissions}
+                  onTogglePermission={handleToggleRolePermission}
+                  onCreateModule={handleCreateModule}
+                  onCreatePermission={handleCreatePermission}
+                />
+              ) : (
+                <section className="flex min-h-[400px] items-center justify-center rounded-[28px] border border-slate-200 bg-white p-8 text-center shadow-sm dark:border-white/10 dark:bg-[#111d35]">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#3163a2] dark:text-[#9dbf14]">Acceso restringido</p>
+                    <h2 className="mt-3 text-2xl font-semibold">No tienes permisos para Roles y permisos</h2>
+                  </div>
+                </section>
+              )
             ) : section === 'knowledge' ? (
               canManageKnowledge ? (
                 <KnowledgeAdminPage
                   onBackHome={onBackHome}
-                  onBackKnowledge={() => setSection('overview')}
+                  onBackKnowledge={() => navigateToSection('overview')}
                 />
               ) : (
                 <section className="flex min-h-[400px] items-center justify-center rounded-[28px] border border-slate-200 bg-white p-8 text-center shadow-sm dark:border-white/10 dark:bg-[#111d35]">
@@ -374,19 +561,41 @@ export function AdminPage({ dark, user, onBackHome, onLogout, onConfirmLogout, o
                   </div>
                 </section>
               )
-            ) : (
-              <AdminUsersPage
-                users={users}
-                availableRoles={roles}
-                isSuperAdmin={Boolean(isSuperAdmin)}
-                loading={loading}
-                error={error}
-                saving={saving}
-                onToggleStatus={handleToggleStatus}
-                onRoleChange={handleRoleChange}
-                onCreateUser={handleCreateUser}
-                onCreateRole={handleCreateRole}
+            ) : section === 'profile' ? (
+              <ProfileModuleRouter
+                mode={selectedProfileUser ? 'admin' : 'self'}
+                userId={selectedProfileUser?.id}
+                onToast={onToast}
               />
+            ) : (
+              canManageUsers ? (
+                <AdminUsersPage
+                  users={accessManagedUsers}
+                  availableRoles={roles}
+                  isSuperAdmin={Boolean(isSuperAdmin)}
+                  loading={loading}
+                  error={error}
+                  saving={saving}
+                  onToggleStatus={handleToggleStatus}
+                  onRoleChange={handleRoleChange}
+                  onEditProfile={(targetUser) => {
+                    setSelectedProfileUser(targetUser);
+                    navigateToSection('profile', {
+                      preserveSelectedProfileUser: true,
+                      profileHash: withProfileUserId('#admin/perfil/personal', targetUser.id),
+                    });
+                  }}
+                  onCreateUser={handleCreateUser}
+                  onCreateRole={handleCreateRole}
+                />
+              ) : (
+                <section className="flex min-h-[400px] items-center justify-center rounded-[28px] border border-slate-200 bg-white p-8 text-center shadow-sm dark:border-white/10 dark:bg-[#111d35]">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#3163a2] dark:text-[#9dbf14]">Acceso restringido</p>
+                    <h2 className="mt-3 text-2xl font-semibold">No tienes permisos para Usuarios</h2>
+                  </div>
+                </section>
+              )
             )}
           </div>
         </main>

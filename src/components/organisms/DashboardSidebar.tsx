@@ -1,143 +1,86 @@
+import { useCallback, useEffect, useRef, useState } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import {
-  Home,
+  Activity,
+  BriefcaseBusiness,
+  Building2,
+  Camera,
+  ChevronDown,
+  LockKeyhole,
   LogOut,
-  Menu,
   ShieldCheck,
+  Settings2,
   Users,
-  ChevronRight,
-  LayoutDashboard,
-  BookOpenText,
+  UserCircle2,
 } from "lucide-react";
 
-import type { LucideIcon } from "lucide-react";
-import type { AuthUser } from "../../lib/api";
+import { getMyUserProfile } from "../../lib/api";
 
-const logoAserco = new URL(
-  "../../assets/logos/LogoAserco1.png",
-  import.meta.url,
-).href;
+import type { DashboardSidebarProps } from "./dashboard-sidebar/sidebar.types";
 
-const logoColor = new URL("../../assets/logos/logoColor.png", import.meta.url).href;
+export type { DashboardSection } from "./dashboard-sidebar/sidebar.types";
 
-const logoAsercoDark = new URL(
-  "../../assets/logos/logoAsercoDark.png",
-  import.meta.url,
-).href;
+import { SidebarAction } from "./dashboard-sidebar/SidebarAction";
 
-export type DashboardSection = "overview" | "users" | "roles" | "knowledge";
+import { SidebarHeader } from "./dashboard-sidebar/SidebarHeader";
 
-type DashboardSidebarProps = Readonly<{
-  dark: boolean;
-  user: AuthUser | null;
-  sidebarOpen: boolean;
-  activeSection?: DashboardSection;
-  onToggleSidebar: () => void;
-  onBackHome: () => void;
-  onLogout: () => void;
-  onConfirmLogout?: () => void;
-  showKnowledge?: boolean;
-  onOpenOverview?: () => void;
-  onOpenUsers?: () => void;
-  onOpenRoles?: () => void;
-  onOpenKnowledge?: () => void;
-  onMouseEnter: () => void;
-  onMouseLeave: () => void;
-}>;
+import { SidebarNavigation } from "./dashboard-sidebar/SidebarNavigation";
 
-type SidebarActionProps = Readonly<{
-  icon: LucideIcon;
-  label: string;
-  sidebarOpen: boolean;
-  dark: boolean;
-  active?: boolean;
-  danger?: boolean;
-  onClick: () => void;
-}>;
+import { SidebarUserCard } from "./dashboard-sidebar/SidebarUserCard";
 
-function SidebarAction({
-  icon: Icon,
-  label,
-  sidebarOpen,
-  dark,
-  active = false,
-  danger = false,
-  onClick,
-}: SidebarActionProps) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      title={!sidebarOpen ? label : undefined}
-      aria-label={label}
-      aria-current={active ? "page" : undefined}
-      className={`
-        group relative flex w-full min-w-0 items-center
-        overflow-hidden rounded-xl py-2.5
-        transition-all duration-200
-        focus-visible:outline-none
-        focus-visible:ring-2 focus-visible:ring-[#9dbf14]
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || "http://localhost:4000/api";
+const API_ORIGIN = API_BASE_URL.replace(/\/api\/?$/, "");
 
-        ${sidebarOpen ? "justify-start gap-3 px-3" : "justify-center px-0"}
+function resolveAvatarUrl(value: string | null | undefined): string | null {
+  const next = value?.trim();
+  if (!next) return null;
 
-        ${
-          active
-            ? dark
-              ? "bg-[#9dbf14]/[0.12] text-[#dff090] ring-1 ring-inset ring-[#9dbf14]/[0.18]"
-              : "bg-[#edf5c5] text-[#22264b] ring-1 ring-inset ring-[#9dbf14]/30"
-            : danger
-              ? dark
-                ? "text-slate-400 hover:bg-red-500/[0.10] hover:text-red-300"
-                : "text-slate-600 hover:bg-red-50 hover:text-red-600"
-              : dark
-                ? "text-slate-400 hover:bg-white/[0.06] hover:text-white"
-                : "text-slate-600 hover:bg-slate-200/70 hover:text-[#22264b]"
-        }
-      `}
-    >
-      {active && (
-        <span className="absolute bottom-2 left-0 top-2 w-[3px] rounded-r-full bg-[#b5d83d]" />
-      )}
+  const useProxy =
+    import.meta.env.DEV &&
+    typeof window !== "undefined" &&
+    (window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1");
 
-      <span
-        className={`
-          grid size-10 shrink-0 place-items-center
-          rounded-xl transition-colors duration-200
+  if (/^(https?:\/\/|data:|blob:)/.test(next)) return next;
 
-          ${
-            active
-              ? dark
-                ? "bg-[#9dbf14]/15 group-hover:bg-[#9dbf14]/25"
-                : "bg-white shadow-sm"
-              : danger
-                ? dark
-                  ? "bg-white/[0.04] group-hover:bg-red-500/10"
-                  : "bg-slate-100 group-hover:bg-red-100"
-                : dark
-                  ? "bg-white/[0.04] group-hover:bg-white/[0.09]"
-                  : "bg-white ring-1 ring-slate-200/70 group-hover:bg-slate-50"
-          }
-        `}
-      >
-        <Icon size={19} strokeWidth={1.8} className="shrink-0" />
-      </span>
+  if (next.startsWith("//")) {
+    const protocol =
+      typeof window !== "undefined" ? window.location.protocol : "https:";
+    return `${protocol}${next}`;
+  }
 
-      <span
-        className={`
-          min-w-0 flex-1 overflow-hidden whitespace-nowrap
-          text-left text-[13px]
-          transition-all duration-200
-          ${sidebarOpen ? "max-w-[180px] opacity-100" : "max-w-0 opacity-0"}
-          ${active ? "font-semibold" : "font-medium"}
-        `}
-      >
-        {label}
-      </span>
+  if (next.startsWith("/")) {
+    return useProxy
+      ? `${window.location.origin}${next}`
+      : `${API_ORIGIN}${next}`;
+  }
 
-      {active && sidebarOpen && (
-        <ChevronRight size={16} strokeWidth={1.8} className="shrink-0 text-[#b5d83d]" />
-      )}
-    </button>
-  );
+  return useProxy
+    ? `${window.location.origin}/${next}`
+    : `${API_ORIGIN}/${next}`;
+}
+
+function calculateMenuPosition(
+  trigger: HTMLElement,
+  menu: HTMLElement,
+  fallbackHeight: number,
+  fallbackWidth: number,
+) {
+  const margin = 8;
+  const triggerRect = trigger.getBoundingClientRect();
+  const menuHeight = menu.offsetHeight || fallbackHeight;
+  const menuWidth = menu.offsetWidth || fallbackWidth;
+  const overflowBottom =
+    triggerRect.top + menuHeight - (window.innerHeight - margin);
+  const minTop = margin - triggerRect.top;
+
+  const adjustedTop = overflowBottom > 0 ? -overflowBottom : 0;
+
+  return {
+    top: Math.max(adjustedTop, minTop),
+    openLeft: triggerRect.right + 8 + menuWidth > window.innerWidth - margin,
+  };
 }
 
 export function DashboardSidebar({
@@ -145,241 +88,731 @@ export function DashboardSidebar({
   user,
   sidebarOpen,
   activeSection = "overview",
-  onToggleSidebar,
-  onBackHome,
+  onToggleSidebar: _onToggleSidebar,
+  onBackHome: _onBackHome,
   onLogout,
   onConfirmLogout,
   showKnowledge = false,
+  showUsersOption = true,
+  showRolesOption = true,
   onOpenOverview,
   onOpenUsers,
   onOpenRoles,
   onOpenKnowledge,
-  onMouseEnter,
-  onMouseLeave,
+  onOpenProfile,
+  onOpenProfileSection,
 }: DashboardSidebarProps) {
-  const initials =
-    user?.name
-      ?.trim()
-      .split(/\s+/)
-      .slice(0, 2)
-      .map((part) => part[0])
-      .join("")
-      .toUpperCase() || "A";
+  const profileCloseTimeoutRef = useRef<number | null>(null);
+
+  const settingsCloseTimeoutRef = useRef<number | null>(null);
+
+  const profileTriggerRef = useRef<HTMLDivElement | null>(null);
+
+  const collapsedProfileMenuRef = useRef<HTMLDivElement | null>(null);
+
+  const settingsTriggerRef = useRef<HTMLButtonElement | null>(null);
+
+  const collapsedSettingsMenuRef = useRef<HTMLDivElement | null>(null);
+
+  const [profileMenuOpen, setProfileMenuOpen] = useState(
+    activeSection === "profile",
+  );
+
+  const [profileAvatarLoadError, setProfileAvatarLoadError] = useState(false);
+
+  const [resolvedProfileAvatarUrl, setResolvedProfileAvatarUrl] = useState<
+    string | null
+  >(null);
+
+  const hasSettingsOptions = showUsersOption || showRolesOption;
+
+  const isSettingsActive =
+    (showUsersOption && activeSection === "users") ||
+    (showRolesOption && activeSection === "roles");
+
+  const [settingsOpen, setSettingsOpen] = useState(isSettingsActive);
+
+  const [collapsedProfileOffsetTop, setCollapsedProfileOffsetTop] = useState(0);
+
+  const [collapsedProfileToLeft, setCollapsedProfileToLeft] = useState(false);
+
+  const [collapsedSettingsOffsetTop, setCollapsedSettingsOffsetTop] =
+    useState(0);
+
+  const [collapsedSettingsToLeft, setCollapsedSettingsToLeft] = useState(false);
+
+  const profileRoutes = [
+    { label: "Inicio de perfil", hash: "#admin/perfil", icon: UserCircle2 },
+
+    { label: "Fotografía", hash: "#admin/perfil/fotografia", icon: Camera },
+
+    {
+      label: "Información personal",
+
+      hash: "#admin/perfil/personal",
+
+      icon: UserCircle2,
+    },
+
+    {
+      label: "Información empresarial",
+
+      hash: "#admin/perfil/empresarial",
+
+      icon: Building2,
+    },
+
+    {
+      label: "Información comercial",
+
+      hash: "#admin/perfil/comercial",
+
+      icon: BriefcaseBusiness,
+    },
+
+    { label: "Seguridad", hash: "#admin/perfil/seguridad", icon: LockKeyhole },
+
+    { label: "Actividad", hash: "#admin/perfil/actividad", icon: Activity },
+  ] as const;
+
+  const profileAvatarUrl = resolveAvatarUrl(
+    user?.avatarUrl ?? user?.defaultAvatarUrl ?? null,
+  );
+
+  const showProfileAvatar =
+    Boolean(resolvedProfileAvatarUrl) && !profileAvatarLoadError;
+
+  const handleLogout = () => {
+    if (onConfirmLogout) {
+      onConfirmLogout();
+
+      return;
+    }
+
+    onLogout();
+  };
+
+  useEffect(() => {
+    if (!sidebarOpen && !isSettingsActive) {
+      setSettingsOpen(false);
+    }
+  }, [sidebarOpen, isSettingsActive]);
+
+  useEffect(() => {
+    if (!hasSettingsOptions) {
+      setSettingsOpen(false);
+    }
+  }, [hasSettingsOptions]);
+
+  useEffect(() => {
+    if (sidebarOpen && activeSection !== "profile") {
+      setProfileMenuOpen(false);
+    }
+  }, [sidebarOpen, activeSection]);
+
+  useEffect(() => {
+    let active = true;
+
+    const hydrateAvatar = async () => {
+      if (!user) {
+        if (active) setResolvedProfileAvatarUrl(null);
+
+        return;
+      }
+
+      if (profileAvatarUrl) {
+        if (active) setResolvedProfileAvatarUrl(profileAvatarUrl);
+
+        return;
+      }
+
+      try {
+        const response = await getMyUserProfile();
+
+        const fromProfile = resolveAvatarUrl(
+          response.profile.avatarUrl ??
+            response.profile.defaultAvatarUrl ??
+            null,
+        );
+
+        if (active) {
+          setResolvedProfileAvatarUrl(fromProfile);
+        }
+      } catch {
+        if (active) {
+          setResolvedProfileAvatarUrl(null);
+        }
+      }
+    };
+
+    void hydrateAvatar();
+
+    return () => {
+      active = false;
+    };
+  }, [user?.id, profileAvatarUrl]);
+
+  useEffect(() => {
+    setProfileAvatarLoadError(false);
+  }, [resolvedProfileAvatarUrl]);
+
+  const updateCollapsedSettingsPosition = useCallback(() => {
+    if (sidebarOpen || !settingsOpen) return;
+
+    const trigger = settingsTriggerRef.current;
+    const menu = collapsedSettingsMenuRef.current;
+    if (!trigger || !menu || typeof window === "undefined") return;
+
+    const position = calculateMenuPosition(trigger, menu, 200, 208);
+    setCollapsedSettingsOffsetTop(position.top);
+    setCollapsedSettingsToLeft(position.openLeft);
+  }, [sidebarOpen, settingsOpen]);
+  const clearProfileCloseTimeout = useCallback(() => {
+    if (profileCloseTimeoutRef.current !== null) {
+      window.clearTimeout(profileCloseTimeoutRef.current);
+
+      profileCloseTimeoutRef.current = null;
+    }
+  }, []);
+
+  const clearSettingsCloseTimeout = useCallback(() => {
+    if (settingsCloseTimeoutRef.current !== null) {
+      window.clearTimeout(settingsCloseTimeoutRef.current);
+
+      settingsCloseTimeoutRef.current = null;
+    }
+  }, []);
+
+  const scheduleProfileMenuClose = useCallback(() => {
+    if (sidebarOpen) {
+      return;
+    }
+
+    clearProfileCloseTimeout();
+
+    profileCloseTimeoutRef.current = window.setTimeout(() => {
+      setProfileMenuOpen(false);
+
+      profileCloseTimeoutRef.current = null;
+    }, 180);
+  }, [sidebarOpen, clearProfileCloseTimeout]);
+
+  const scheduleSettingsMenuClose = useCallback(() => {
+    if (sidebarOpen) {
+      return;
+    }
+
+    clearSettingsCloseTimeout();
+
+    settingsCloseTimeoutRef.current = window.setTimeout(() => {
+      setSettingsOpen(false);
+
+      settingsCloseTimeoutRef.current = null;
+    }, 180);
+  }, [sidebarOpen, clearSettingsCloseTimeout]);
+
+  const updateCollapsedProfilePosition = useCallback(() => {
+    if (sidebarOpen || !profileMenuOpen) return;
+
+    const trigger = profileTriggerRef.current;
+    const menu = collapsedProfileMenuRef.current;
+    if (!trigger || !menu || typeof window === "undefined") return;
+
+    const position = calculateMenuPosition(trigger, menu, 280, 248);
+    setCollapsedProfileOffsetTop(position.top);
+    setCollapsedProfileToLeft(position.openLeft);
+  }, [sidebarOpen, profileMenuOpen]);
+  useEffect(() => {
+    if (sidebarOpen || !settingsOpen) {
+      return;
+    }
+
+    const rafId = window.requestAnimationFrame(() => {
+      updateCollapsedSettingsPosition();
+    });
+
+    const handleReposition = () => {
+      updateCollapsedSettingsPosition();
+    };
+
+    window.addEventListener("resize", handleReposition);
+
+    window.addEventListener("scroll", handleReposition, true);
+
+    return () => {
+      window.cancelAnimationFrame(rafId);
+
+      window.removeEventListener("resize", handleReposition);
+
+      window.removeEventListener("scroll", handleReposition, true);
+    };
+  }, [sidebarOpen, settingsOpen, updateCollapsedSettingsPosition]);
+
+  useEffect(() => {
+    if (sidebarOpen || !profileMenuOpen) {
+      return;
+    }
+
+    const rafId = window.requestAnimationFrame(() => {
+      updateCollapsedProfilePosition();
+    });
+
+    const handleReposition = () => {
+      updateCollapsedProfilePosition();
+    };
+
+    window.addEventListener("resize", handleReposition);
+
+    window.addEventListener("scroll", handleReposition, true);
+
+    return () => {
+      window.cancelAnimationFrame(rafId);
+
+      window.removeEventListener("resize", handleReposition);
+
+      window.removeEventListener("scroll", handleReposition, true);
+    };
+  }, [sidebarOpen, profileMenuOpen, updateCollapsedProfilePosition]);
+
+  useEffect(() => {
+    return () => {
+      clearProfileCloseTimeout();
+
+      clearSettingsCloseTimeout();
+    };
+  }, [clearProfileCloseTimeout, clearSettingsCloseTimeout]);
+
+  let settingsLayoutClass = "justify-center px-0";
+  if (sidebarOpen) settingsLayoutClass = "justify-start gap-3 px-3";
+
+  let settingsButtonStateClass =
+    "text-slate-600 hover:bg-[#eef3ff] hover:text-[#22264b]";
+  if (dark)
+    settingsButtonStateClass =
+      "text-slate-400 hover:bg-white/6 hover:text-white";
+  if (isSettingsActive && dark)
+    settingsButtonStateClass = "bg-[#9dbf14]/10 text-[#dff090]";
+  if (isSettingsActive && !dark)
+    settingsButtonStateClass = "bg-[#edf5c5] text-[#22264b]";
+
+  let settingsIconClass = "text-slate-500 group-hover:text-[#789900]";
+  if (dark) settingsIconClass = "text-slate-400 group-hover:text-[#dff090]";
+  if (isSettingsActive) settingsIconClass = "text-[#9dbf14]";
 
   return (
     <aside
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
       aria-label="Menú principal"
       className={`
-        sticky top-0 hidden h-[100dvh] shrink-0 flex-col
-        overflow-hidden border-r
-        transition-[width] duration-300 ease-in-out
+
+        aserco-dashboard-sidebar
+
+        sticky top-0 z-40 hidden h-dvh shrink-0 flex-col
+
+        overflow-visible border-r
+
+        transition-[width] duration-200 ease-in-out
+
+        will-change-[width]
+
         lg:flex
-        ${sidebarOpen ? "w-72" : "w-[76px]"}
-        ${
-          dark
-            ? "border-white/[0.06] bg-[#171d3d] text-white"
-            : "border-slate-200 bg-[#f7f9fc] text-[#22264b]"
-        }
+
+        ${sidebarOpen ? "w-72" : "w-19"}
+
       `}
     >
+      {/* DECORACIÓN DE FONDO */}
+
       <div
         className={`
+
           pointer-events-none absolute -right-28 top-24
+
           size-72 rounded-full blur-3xl
-          ${dark ? "bg-[#3163a2]/10" : "bg-[#dfeafc]/80"}
+
+          ${dark ? "bg-[#3163a2]/10" : "bg-[#eef3ff]/80"}
+
         `}
       />
 
       <div
         className={`
+
           pointer-events-none absolute -bottom-32 -left-24
+
           size-64 rounded-full blur-3xl
-          ${dark ? "bg-[#9dbf14]/[0.06]" : "bg-[#edf5c5]/80"}
+
+          ${dark ? "bg-[#9dbf14]/6" : "bg-[#edf5c5]/80"}
+
         `}
       />
 
       <div className="relative z-10 flex h-full min-h-0 flex-col">
-        <header
+        <SidebarHeader dark={dark} sidebarOpen={sidebarOpen} />
+
+        <SidebarNavigation
+          dark={dark}
+          sidebarOpen={sidebarOpen}
+          activeSection={activeSection}
+          showKnowledge={showKnowledge}
+          onOpenOverview={onOpenOverview}
+          onOpenKnowledge={onOpenKnowledge}
+        />
+
+        {/* PERFIL Y CONFIGURACIÓN */}
+
+        <div
           className={`
-            flex h-[88px] shrink-0 items-center border-b
-            transition-all duration-300
-            ${sidebarOpen ? "justify-between px-5" : "justify-center px-2"}
-            ${dark ? "border-white/[0.07]" : "border-slate-200"}
+
+            relative z-20 shrink-0 pb-3
+
+            transition-all duration-200
+
+            ${sidebarOpen ? "px-3" : "px-2"}
+
           `}
         >
           <div
-            className={`
-              flex shrink-0 items-center justify-center
-              overflow-hidden transition-all duration-300
-              ${
-                sidebarOpen
-                  ? "h-10 w-[135px] bg-transparent"
-                  : `size-10 rounded-xl shadow-lg ${
-                      dark
-                        ? "bg-white shadow-black/10"
-                        : "bg-white ring-1 ring-slate-200 shadow-slate-200/60"
-                    }`
+            ref={profileTriggerRef}
+            className="relative"
+            onMouseEnter={() => {
+              if (!sidebarOpen) {
+                clearProfileCloseTimeout();
+
+                setProfileMenuOpen(true);
               }
-            `}
+            }}
+            onMouseLeave={() => {
+              scheduleProfileMenuClose();
+            }}
           >
-            {sidebarOpen ? (
-              <>
-                <img src={logoAserco} alt="Aserco Smart Finance" className="hero-logo-light h-full w-full" />
-                <img src={logoAsercoDark} alt="" aria-hidden="true" className="hero-logo-dark" />
-              </>
-            ) : (
-              <img src={logoColor} alt="Aserco" className="h-full w-full object-contain p-2" />
-            )}
-          </div>
-
-          {sidebarOpen && (
-            <button
-              type="button"
-              onClick={onToggleSidebar}
-              aria-label="Contraer menú"
-              aria-expanded={sidebarOpen}
-              title="Contraer menú"
-              className={`
-                grid size-10 shrink-0 place-items-center
-                rounded-xl transition
-                focus-visible:outline-none
-                focus-visible:ring-2 focus-visible:ring-[#9dbf14]
-                ${
-                  dark
-                    ? "text-slate-400 hover:bg-white/[0.08] hover:text-white"
-                    : "text-slate-500 hover:bg-slate-200 hover:text-[#22264b]"
-                }
-              `}
-            >
-              <Menu size={20} strokeWidth={1.8} />
-            </button>
-          )}
-        </header>
-
-        {!sidebarOpen && (
-          <div className="flex shrink-0 justify-center py-3">
-            <button
-              type="button"
-              onClick={onToggleSidebar}
-              aria-label="Expandir menú"
-              aria-expanded={sidebarOpen}
-              title="Expandir menú"
-              className={`
-                grid size-10 place-items-center rounded-xl
-                transition focus-visible:outline-none
-                focus-visible:ring-2 focus-visible:ring-[#9dbf14]
-                ${
-                  dark
-                    ? "text-slate-400 hover:bg-white/[0.08] hover:text-white"
-                    : "text-slate-500 hover:bg-slate-200 hover:text-[#22264b]"
-                }
-              `}
-            >
-              <Menu size={20} strokeWidth={1.8} />
-            </button>
-          </div>
-        )}
-
-        <nav aria-label="Navegación" className={`min-h-0 flex-1 overflow-y-auto overscroll-contain py-6 ${sidebarOpen ? "px-3" : "px-2"}`}>
-          {sidebarOpen && (
-            <div className="mb-4 px-3">
-              <p className={`text-[10px] font-bold uppercase tracking-[0.2em] ${dark ? "text-slate-500" : "text-slate-400"}`}>
-                Administración
-              </p>
-            </div>
-          )}
-
-          <div className="flex flex-col gap-2">
             <SidebarAction
-              icon={LayoutDashboard}
-              label="Inicio"
+              icon={UserCircle2}
+              label="Mi perfil"
               sidebarOpen={sidebarOpen}
               dark={dark}
-              active={activeSection === "overview"}
-              onClick={() => onOpenOverview?.()}
+              active={activeSection === "profile"}
+              avatarSrc={showProfileAvatar ? resolvedProfileAvatarUrl : null}
+              avatarAlt={`Foto de ${user?.name ?? "Usuario"}`}
+              onAvatarError={() => setProfileAvatarLoadError(true)}
+              onClick={() => {
+                onOpenProfile?.();
+
+                setProfileMenuOpen((value) => !value);
+
+                window.location.hash = "#admin/perfil";
+              }}
             />
 
-            <SidebarAction
-              icon={Users}
-              label="Usuarios"
-              sidebarOpen={sidebarOpen}
-              dark={dark}
-              active={activeSection === "users"}
-              onClick={() => onOpenUsers?.()}
-            />
+            {sidebarOpen && profileMenuOpen && (
+              <div
+                className={`
 
-            <SidebarAction
-              icon={ShieldCheck}
-              label="Roles & permisos"
-              sidebarOpen={sidebarOpen}
-              dark={dark}
-              active={activeSection === "roles"}
-              onClick={() => onOpenRoles?.()}
-            />
+                  mb-3 mt-2 ml-5 border-l pl-3
 
-            {showKnowledge && (
-              <SidebarAction
-                icon={BookOpenText}
-                label="Conocimiento"
-                sidebarOpen={sidebarOpen}
-                dark={dark}
-                active={activeSection === "knowledge"}
-                onClick={() => onOpenKnowledge?.()}
-              />
-            )}
-          </div>
+                  animate-in fade-in slide-in-from-top-1 duration-150
 
-          <div className={`my-5 border-t ${dark ? "border-white/[0.07]" : "border-slate-200"}`} />
+                  ${dark ? "border-white/12" : "border-slate-300"}
 
-          <div className="flex flex-col gap-2">
-            <SidebarAction
-              icon={Home}
-              label="Volver al inicio"
-              sidebarOpen={sidebarOpen}
-              dark={dark}
-              onClick={onBackHome}
-            />
-          </div>
-        </nav>
+                `}
+              >
+                <div className="flex flex-col gap-1">
+                  {profileRoutes.map((item) => {
+                    const isActiveRoute =
+                      typeof window !== "undefined" &&
+                      window.location.hash === item.hash;
 
-        <div className={`shrink-0 pb-3 ${sidebarOpen ? "px-3" : "px-2"}`}>
-          {sidebarOpen ? (
-            <div className={`mb-3 rounded-xl border p-3 ${dark ? "border-white/[0.07] bg-white/[0.035]" : "border-slate-200 bg-white"}`}>
-              <div className="flex min-w-0 items-center gap-3">
-                <div className={`grid size-10 shrink-0 place-items-center rounded-xl text-xs font-bold ring-1 ring-inset ${dark ? "bg-[#3163a2]/20 text-[#a9c9f5] ring-[#3163a2]/20" : "bg-[#edf5c5] text-[#22264b] ring-[#9dbf14]/30"}`}>
-                  {initials}
-                </div>
+                    return (
+                      <SidebarAction
+                        key={item.hash}
+                        icon={item.icon}
+                        label={item.label}
+                        sidebarOpen={sidebarOpen}
+                        dark={dark}
+                        active={isActiveRoute}
+                        nested
+                        onClick={() => {
+                          onOpenProfileSection?.();
 
-                <div className="min-w-0 flex-1">
-                  <p className={`truncate text-xs font-semibold ${dark ? "text-white" : "text-[#22264b]"}`}>
-                    {user?.name || "Administrador"}
-                  </p>
+                          setProfileMenuOpen(false);
 
-                  <p className={`mt-1 truncate text-[10px] ${dark ? "text-slate-400" : "text-slate-500"}`}>
-                    {user?.email || "Cuenta administrativa"}
-                  </p>
+                          window.location.hash = item.hash;
+                        }}
+                      />
+                    );
+                  })}
                 </div>
               </div>
+            )}
 
-              <div className={`mt-3 flex items-center gap-2 border-t pt-3 ${dark ? "border-white/[0.07]" : "border-slate-200"}`}>
-                <ShieldCheck size={14} className="shrink-0 text-[#b5d83d]" />
+            {profileMenuOpen && !sidebarOpen && (
+              <div
+                ref={collapsedProfileMenuRef}
+                onMouseEnter={clearProfileCloseTimeout}
+                onMouseLeave={scheduleProfileMenuClose}
+                className={`
 
-                <span className={`text-[10px] font-medium ${dark ? "text-slate-400" : "text-slate-500"}`}>
-                  Cuenta activa
+                  absolute top-0 z-110 w-62
+
+                  rounded-xl border p-2 shadow-xl
+
+                  overflow-y-auto
+
+                  animate-in fade-in slide-in-from-left-1 duration-150
+
+                  ${collapsedProfileToLeft ? "right-full mr-2" : "left-full ml-2"}
+
+                  ${
+                    dark
+                      ? "border-white/10 bg-[#111d35] shadow-black/30"
+                      : "border-slate-200 bg-white shadow-slate-900/15"
+                  }
+
+                `}
+                style={{
+                  top: collapsedProfileOffsetTop,
+
+                  maxHeight: "calc(100vh - 16px)",
+                }}
+              >
+                <p
+                  className={`
+
+                    px-3 py-2 text-[10px] font-bold uppercase tracking-[0.15em]
+
+                    ${dark ? "text-slate-500" : "text-slate-400"}
+
+                  `}
+                >
+                  Mi perfil
+                </p>
+
+                <div className="flex flex-col gap-1">
+                  {profileRoutes.map((item) => {
+                    const isActiveRoute =
+                      typeof window !== "undefined" &&
+                      window.location.hash === item.hash;
+
+                    return (
+                      <SidebarAction
+                        key={item.hash}
+                        icon={item.icon}
+                        label={item.label}
+                        sidebarOpen={true}
+                        dark={dark}
+                        active={isActiveRoute}
+                        onClick={() => {
+                          onOpenProfileSection?.();
+
+                          setProfileMenuOpen(false);
+
+                          window.location.hash = item.hash;
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* MENÚ CONFIGURACIÓN */}
+
+          {hasSettingsOptions && (
+            <div
+              className="relative mb-3 mt-2"
+              onMouseEnter={() => {
+                clearSettingsCloseTimeout();
+
+                setSettingsOpen(true);
+              }}
+              onMouseLeave={scheduleSettingsMenuClose}
+            >
+              <button
+                ref={settingsTriggerRef}
+                type="button"
+                onClick={() => setSettingsOpen((value) => !value)}
+                onFocus={() => setSettingsOpen(true)}
+                aria-expanded={settingsOpen}
+                aria-haspopup="true"
+                aria-label="Configuración"
+                title={!sidebarOpen ? "Configuración" : undefined}
+                className={`
+
+                aserco-sidebar-action group flex w-full items-center rounded-xl py-2.5
+
+                transition-all duration-200
+
+                focus-visible:outline-none
+
+                focus-visible:ring-2 focus-visible:ring-[#9dbf14]/50
+
+                ${settingsLayoutClass}
+                ${settingsButtonStateClass}
+              `}
+              >
+                <span className="grid size-9 shrink-0 place-items-center rounded-lg">
+                  <Settings2
+                    size={19}
+                    strokeWidth={1.9}
+                    className={settingsIconClass}
+                  />
                 </span>
 
-                <span className="ml-auto size-1.5 rounded-full bg-[#9dbf14] shadow-[0_0_8px_#9dbf14]" />
-              </div>
-            </div>
-          ) : (
-            <div title={user?.name || "Administrador"} className="mb-3 flex justify-center">
-              <div className={`grid size-10 place-items-center rounded-xl text-xs font-bold ${dark ? "border border-white/10 bg-[#3163a2]/20 text-[#a9c9f5]" : "border border-slate-200 bg-[#edf5c5] text-[#22264b]"}`}>
-                {initials}
-              </div>
+                {sidebarOpen && (
+                  <>
+                    <span className="min-w-0 flex-1 text-left text-[13px] font-medium">
+                      Configuración
+                    </span>
+
+                    <ChevronDown
+                      size={16}
+                      className={`shrink-0 transition-transform duration-200 ${
+                        settingsOpen ? "rotate-180" : ""
+                      }`}
+                    />
+                  </>
+                )}
+              </button>
+
+              {/* SUBMENÚ SIDEBAR EXPANDIDO */}
+
+              {settingsOpen && sidebarOpen && (
+                <div
+                  className={`
+
+                  ml-5 mt-2 border-l pl-3
+
+                  animate-in fade-in slide-in-from-top-1 duration-150
+
+                  ${dark ? "border-white/12" : "border-slate-300"}
+
+                `}
+                >
+                  <div className="flex flex-col gap-1">
+                    {showUsersOption && (
+                      <SidebarAction
+                        icon={Users}
+                        label="Usuarios"
+                        sidebarOpen={sidebarOpen}
+                        dark={dark}
+                        active={activeSection === "users"}
+                        nested
+                        onClick={() => {
+                          setSettingsOpen(false);
+
+                          onOpenUsers?.();
+                        }}
+                      />
+                    )}
+
+                    {showRolesOption && (
+                      <SidebarAction
+                        icon={ShieldCheck}
+                        label="Roles & permisos"
+                        sidebarOpen={sidebarOpen}
+                        dark={dark}
+                        active={activeSection === "roles"}
+                        nested
+                        onClick={() => {
+                          setSettingsOpen(false);
+
+                          onOpenRoles?.();
+                        }}
+                      />
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* SUBMENÚ SIDEBAR CONTRAÍDO */}
+
+              {settingsOpen && !sidebarOpen && (
+                <div
+                  ref={collapsedSettingsMenuRef}
+                  onMouseEnter={clearSettingsCloseTimeout}
+                  onMouseLeave={scheduleSettingsMenuClose}
+                  className={`
+
+                  absolute top-0 z-100 w-52
+
+                  rounded-xl border p-2 shadow-xl
+
+                  overflow-y-auto
+
+                  animate-in fade-in slide-in-from-left-1 duration-150
+
+                  ${collapsedSettingsToLeft ? "right-full mr-2" : "left-full ml-2"}
+
+                  ${
+                    dark
+                      ? "border-white/10 bg-[#111d35] shadow-black/30"
+                      : "border-slate-200 bg-white shadow-slate-900/15"
+                  }
+
+                `}
+                  style={{
+                    top: collapsedSettingsOffsetTop,
+
+                    maxHeight: "calc(100vh - 16px)",
+                  }}
+                >
+                  <p
+                    className={`
+
+                    px-3 py-2 text-[10px] font-bold uppercase tracking-[0.15em]
+
+                    ${dark ? "text-slate-500" : "text-slate-400"}
+
+                  `}
+                  >
+                    Configuración
+                  </p>
+
+                  <div className="flex flex-col gap-1">
+                    {showUsersOption && (
+                      <SidebarAction
+                        icon={Users}
+                        label="Usuarios"
+                        sidebarOpen={true}
+                        dark={dark}
+                        active={activeSection === "users"}
+                        onClick={() => {
+                          setSettingsOpen(false);
+
+                          onOpenUsers?.();
+                        }}
+                      />
+                    )}
+
+                    {showRolesOption && (
+                      <SidebarAction
+                        icon={ShieldCheck}
+                        label="Roles & permisos"
+                        sidebarOpen={true}
+                        dark={dark}
+                        active={activeSection === "roles"}
+                        onClick={() => {
+                          setSettingsOpen(false);
+
+                          onOpenRoles?.();
+                        }}
+                      />
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
+
+          {sidebarOpen && (
+            <SidebarUserCard
+              dark={dark}
+              userName={user?.name}
+              userEmail={user?.email}
+            />
+          )}
+
+          {/* CERRAR SESIÓN */}
 
           <SidebarAction
             icon={LogOut}
@@ -387,28 +820,16 @@ export function DashboardSidebar({
             sidebarOpen={sidebarOpen}
             dark={dark}
             danger
-            onClick={() => {
-              if (onConfirmLogout) {
-                onConfirmLogout();
-                return;
-              }
-              onLogout();
-            }}
+            onClick={handleLogout}
           />
         </div>
-
-        {sidebarOpen && (
-          <footer className={`shrink-0 border-t px-5 py-4 ${dark ? "border-white/[0.07]" : "border-slate-200"}`}>
-            <p className={`whitespace-nowrap text-[9px] font-medium tracking-[0.12em] ${dark ? "text-slate-600" : "text-slate-500"}`}>
-              ASERCO SMART FINANCE · 2026
-            </p>
-          </footer>
-        )}
       </div>
     </aside>
   );
 }
 
 export function DashboardSidebarBadge() {
-  return <ShieldCheck className="text-[#3163a2] dark:text-[#9dbf14]" size={18} />;
+  return (
+    <ShieldCheck className="text-[#3163a2] dark:text-[#9dbf14]" size={18} />
+  );
 }

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { motion, useReducedMotion } from "motion/react";
 import {
   createKnowledgeArticle,
   createKnowledgeCall,
@@ -46,10 +47,10 @@ import {
   LayoutDashboard,
   MapPin,
 } from "lucide-react";
-type Props = {
+type Props = Readonly<{
   onBackHome: () => void;
   onBackKnowledge: () => void;
-};
+}>;
 
 type ContentTab =
   | "articles"
@@ -58,6 +59,84 @@ type ContentTab =
   | "calls"
   | "resources"
   | "media";
+
+const pageVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.1, delayChildren: 0.04 },
+  },
+};
+
+const sectionVariants = {
+  hidden: { opacity: 0, y: 22, filter: "blur(7px)" },
+  visible: {
+    opacity: 1,
+    y: 0,
+    filter: "blur(0px)",
+    transition: {
+      duration: 0.6,
+      ease: [0.22, 1, 0.36, 1] as const,
+    },
+  },
+};
+
+const listVariants = {
+  hidden: {},
+  visible: {
+    transition: { staggerChildren: 0.07 },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 16 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.45,
+      ease: [0.22, 1, 0.36, 1] as const,
+    },
+  },
+};
+
+function getEditorTitle(
+  activeTab: ContentTab,
+  editing: Readonly<{
+    article: boolean;
+    category: boolean;
+    event: boolean;
+    call: boolean;
+    resource: boolean;
+    media: boolean;
+  }>,
+): string {
+  switch (activeTab) {
+    case "articles":
+      return editing.article ? "Editar artículo" : "Nuevo artículo";
+    case "categories":
+      return editing.category ? "Editar categoría" : "Nueva categoría";
+    case "events":
+      return editing.event ? "Editar evento" : "Nuevo evento";
+    case "calls":
+      return editing.call ? "Editar convocatoria" : "Nueva convocatoria";
+    case "resources":
+      return editing.resource ? "Editar recurso" : "Nuevo recurso";
+    case "media":
+      return editing.media ? "Editar multimedia" : "Nueva multimedia";
+    default:
+      return "Gestión de contenido";
+  }
+}
+
+function getSaveButtonLabel(
+  submitting: boolean,
+  editing: boolean,
+  entity: string,
+): string {
+  if (submitting) return "Guardando...";
+  return `${editing ? "Actualizar" : "Guardar"} ${entity}`;
+}
 
 const EMPTY_ARTICLE_FORM = {
   title: "",
@@ -115,6 +194,7 @@ const EMPTY_MEDIA_FORM = {
 };
 
 export function KnowledgeAdminPage(_: Props) {
+  const shouldReduceMotion = useReducedMotion();
   const [stats, setStats] = useState([
     { label: "Artículos publicados", value: "0" },
     { label: "Artículos borrador", value: "0" },
@@ -408,7 +488,9 @@ export function KnowledgeAdminPage(_: Props) {
     if (!articleForm.title.trim() || !articleForm.content.trim()) return;
 
     if (categories.length === 0) {
-      window.alert("Debes crear al menos una categoría antes de crear un artículo.");
+      window.alert(
+        "Debes crear al menos una categoría antes de crear un artículo.",
+      );
       return;
     }
 
@@ -662,7 +744,7 @@ export function KnowledgeAdminPage(_: Props) {
   };
 
   const tabs: { key: ContentTab; label: string }[] = [
-      { key: "categories", label: "Categorías" },
+    { key: "categories", label: "Categorías" },
     { key: "articles", label: "Artículos" },
     { key: "events", label: "Eventos" },
     { key: "calls", label: "Convocatorias" },
@@ -670,44 +752,74 @@ export function KnowledgeAdminPage(_: Props) {
     { key: "media", label: "Multimedia" },
   ];
 
+  const editingState = {
+    article: editingArticleId !== null,
+    category: editingCategoryId !== null,
+    event: editingEventId !== null,
+    call: editingCallId !== null,
+    resource: editingResourceId !== null,
+    media: editingMediaId !== null,
+  };
+
+  const formTitle = getEditorTitle(activeTab, editingState);
+
+  const resetActiveForm = () => {
+    switch (activeTab) {
+      case "articles":
+        resetArticleForm();
+        break;
+      case "categories":
+        resetCategoryForm();
+        break;
+      case "events":
+        resetEventForm();
+        break;
+      case "calls":
+        resetCallForm();
+        break;
+      case "resources":
+        resetResourceForm();
+        break;
+      case "media":
+        resetMediaForm();
+        break;
+    }
+  };
+
   return (
-    <div className="relative isolate min-h-screen overflow-x-hidden bg-[#f5f7f2] p-4 text-[#1c2440] transition-colors duration-300 dark:bg-[#080f1c] dark:text-white sm:p-6 lg:p-8">
-      {/* Fondo decorativo global */}
-      <div
-        className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
-        aria-hidden="true"
+    <motion.div
+      variants={pageVariants}
+      initial={shouldReduceMotion ? false : "hidden"}
+      animate="visible"
+      className="w-full"
+    >
+      <motion.div
+        variants={listVariants}
+        className="mx-auto max-w-7xl space-y-8"
       >
-        <div className="absolute -left-40 -top-40 h-[460px] w-[460px] rounded-full border border-[#9dbf14]/15" />
-        <div className="absolute -left-24 -top-24 h-[300px] w-[300px] rounded-full border border-[#9dbf14]/20" />
-        <div className="absolute -left-12 top-[25%] h-20 w-20 rounded-full bg-[#9dbf14]/10 blur-3xl" />
-
-        <div className="absolute right-[-180px] top-[10%] h-[500px] w-[500px] rounded-full border border-[#22264b]/10 dark:border-white/10" />
-        <div className="absolute right-[-100px] top-[15%] h-[340px] w-[340px] rounded-full border border-[#9dbf14]/20" />
-        <div className="absolute right-[8%] top-[28%] h-16 w-16 rounded-full bg-[#9dbf14]/10 blur-2xl" />
-
-        <div className="absolute -left-40 top-[48%] h-[460px] w-[460px] rounded-full border border-[#22264b]/10 dark:border-white/10" />
-        <div className="absolute -left-20 top-[53%] h-[300px] w-[300px] rounded-full border border-[#9dbf14]/20" />
-        <div className="absolute left-[15%] top-[70%] h-12 w-12 rounded-full border border-[#9dbf14]/20" />
-
-        <div className="absolute right-[-160px] top-[55%] h-[460px] w-[460px] rounded-full border border-[#9dbf14]/15" />
-        <div className="absolute right-[-90px] top-[60%] h-[300px] w-[300px] rounded-full border border-[#22264b]/10 dark:border-white/10" />
-
-        <div className="absolute bottom-[-200px] left-[25%] h-[500px] w-[500px] rounded-full border border-[#9dbf14]/15" />
-        <div className="absolute bottom-[-120px] left-[30%] h-[340px] w-[340px] rounded-full border border-[#22264b]/10 dark:border-white/10" />
-        <div className="absolute bottom-10 right-[12%] h-24 w-24 rounded-full bg-[#9dbf14]/10 blur-3xl" />
-
-        <div className="absolute left-[45%] top-[20%] h-3 w-3 rounded-full bg-[#9dbf14]/30" />
-        <div className="absolute left-[65%] top-[42%] h-5 w-5 rounded-full border border-[#9dbf14]/25" />
-        <div className="absolute left-[55%] top-[82%] h-4 w-4 rounded-full bg-[#22264b]/10 dark:bg-white/10" />
-      </div>
-
-      <div className="mx-auto max-w-7xl space-y-8">
         {/* Encabezado */}
-        <header className="relative overflow-hidden rounded-[30px] border border-white/80 bg-white/90 p-6 shadow-[0_20px_60px_rgba(29,53,87,0.06)] backdrop-blur-xl dark:border-white/10 dark:bg-[#111d30]/90 sm:p-8">
-          <div className="pointer-events-none absolute -right-20 -top-28 h-80 w-80 rounded-full border border-[#9dbf14]/15" />
-          <div className="pointer-events-none absolute -right-8 -top-16 h-56 w-56 rounded-full border border-[#9dbf14]/15" />
-          <div className="pointer-events-none absolute right-24 top-12 h-20 w-20 rounded-full bg-[#9dbf14]/10 blur-2xl" />
-
+        <motion.header
+          variants={sectionVariants}
+          className="group relative overflow-hidden rounded-[30px] border border-white/80 bg-white/90 p-6 shadow-[0_20px_60px_rgba(29,53,87,0.06)] backdrop-blur-xl dark:border-white/10 dark:bg-[#111d30]/90 sm:p-8"
+        >
+          <motion.div
+            aria-hidden="true"
+            animate={
+              shouldReduceMotion
+                ? undefined
+                : { scale: [1, 1.14, 1], opacity: [0.35, 0.7, 0.35] }
+            }
+            transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
+            className="pointer-events-none absolute -right-20 -top-24 size-72 rounded-full bg-[#9dbf14]/8 blur-3xl"
+          />
+          <motion.div
+            aria-hidden="true"
+            animate={
+              shouldReduceMotion ? undefined : { x: [0, -12, 0], y: [0, 10, 0] }
+            }
+            transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+            className="pointer-events-none absolute -bottom-24 left-1/3 size-56 rounded-full bg-[#3163a2]/6 blur-3xl"
+          />
           <div className="relative z-10 flex flex-col justify-between gap-6 md:flex-row md:items-center">
             <div>
               <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#9dbf14]/30 bg-[#9dbf14]/10 px-3 py-1.5">
@@ -718,7 +830,7 @@ export function KnowledgeAdminPage(_: Props) {
               </div>
 
               <h1 className="text-2xl font-bold tracking-tight text-[#22264b] dark:text-white sm:text-3xl lg:text-4xl">
-                Aserco Conocimiento
+                Aserco Conocimiento{" "}
                 <span className="block text-[#79990b]">Empresarial</span>
               </h1>
 
@@ -746,18 +858,26 @@ export function KnowledgeAdminPage(_: Props) {
               </div>
             </div>
           </div>
-        </header>
+        </motion.header>
 
         {/* Estadísticas */}
-        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <motion.section
+          variants={listVariants}
+          className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+        >
           {stats.map((stat, index) => {
             const icons = [BookOpen, FolderOpen, CalendarDays, FileText];
             const Icon = icons[index % icons.length];
 
             return (
-              <div
+              <motion.div
+                variants={itemVariants}
+                whileHover={
+                  shouldReduceMotion ? undefined : { y: -6, scale: 1.015 }
+                }
+                transition={{ type: "spring", stiffness: 280, damping: 22 }}
                 key={stat.label}
-                className="group relative overflow-hidden rounded-[24px] border border-white/80 bg-white/90 p-5 shadow-[0_12px_40px_rgba(29,53,87,0.05)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_45px_rgba(29,53,87,0.10)] dark:border-white/10 dark:bg-[#111d30]/90"
+                className="group relative overflow-hidden rounded-3xl border border-white/80 bg-white/90 p-5 shadow-[0_12px_40px_rgba(29,53,87,0.05)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_45px_rgba(29,53,87,0.10)] dark:border-white/10 dark:bg-[#111d30]/90"
               >
                 <div className="pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full border border-[#9dbf14]/15 transition-transform duration-500 group-hover:scale-125" />
                 <div className="pointer-events-none absolute -right-4 -top-4 h-16 w-16 rounded-full border border-[#9dbf14]/10" />
@@ -781,18 +901,25 @@ export function KnowledgeAdminPage(_: Props) {
                 <div className="mt-5 h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-white/10">
                   <div className="h-full w-1/3 rounded-full bg-[#9dbf14] transition-all duration-500 group-hover:w-2/3" />
                 </div>
-              </div>
+              </motion.div>
             );
           })}
-        </section>
+        </motion.section>
 
         {/* Administración de contenido */}
-        <section className="overflow-hidden rounded-[28px] border border-white/80 bg-white/90 p-4 shadow-[0_20px_60px_rgba(29,53,87,0.06)] backdrop-blur-xl dark:border-white/10 dark:bg-[#111d30]/90 sm:p-6">
+        <motion.section
+          variants={sectionVariants}
+          className="overflow-hidden rounded-[28px] border border-white/80 bg-white/90 p-4 shadow-[0_20px_60px_rgba(29,53,87,0.06)] backdrop-blur-xl dark:border-white/10 dark:bg-[#111d30]/90 sm:p-6"
+        >
           {/* Navegación */}
           <div className="mb-6 border-b border-slate-100 pb-4 dark:border-white/10">
             <div className="flex gap-2 overflow-x-auto pb-1">
               {tabs.map((tab) => (
-                <button
+                <motion.button
+                  whileHover={
+                    shouldReduceMotion ? undefined : { y: -2, scale: 1.01 }
+                  }
+                  whileTap={shouldReduceMotion ? undefined : { scale: 0.97 }}
                   key={tab.key}
                   type="button"
                   onClick={() => setActiveTab(tab.key)}
@@ -803,7 +930,7 @@ export function KnowledgeAdminPage(_: Props) {
                   }`}
                 >
                   {tab.label}
-                </button>
+                </motion.button>
               ))}
             </div>
           </div>
@@ -811,24 +938,35 @@ export function KnowledgeAdminPage(_: Props) {
           {loading ? (
             <div className="space-y-4 py-6">
               {[1, 2, 3].map((item) => (
-                <div
+                <motion.div
                   key={item}
+                  variants={itemVariants}
                   className="h-24 animate-pulse rounded-[20px] bg-slate-100 dark:bg-white/5"
                 />
               ))}
             </div>
           ) : (
-            <div className="grid items-start gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+            <motion.div
+              variants={listVariants}
+              className="grid items-start gap-6 lg:grid-cols-[1.1fr_0.9fr]"
+            >
               {/* Listados */}
-              <section className="min-w-0 space-y-4">
+              <motion.section
+                variants={listVariants}
+                className="min-w-0 space-y-4"
+              >
                 {/* ARTÍCULOS */}
                 {activeTab === "articles" && (
                   <>
                     {articles.length ? (
                       articles.map((item) => (
-                        <div
+                        <motion.div
                           key={item.id}
-                          className="group rounded-[20px] border border-slate-100 bg-white p-5 transition-all duration-300 hover:border-[#9dbf14]/40 hover:shadow-[0_12px_35px_rgba(29,53,87,0.07)] dark:border-white/10 dark:bg-white/[0.03] dark:hover:border-[#9dbf14]/30"
+                          variants={itemVariants}
+                          whileHover={
+                            shouldReduceMotion ? undefined : { y: -4 }
+                          }
+                          className="group rounded-[20px] border border-slate-100 bg-white p-5 transition-all duration-300 hover:border-[#9dbf14]/40 hover:shadow-[0_12px_35px_rgba(29,53,87,0.07)] dark:border-white/10 dark:bg-white/3 dark:hover:border-[#9dbf14]/30"
                         >
                           <div className="flex flex-wrap items-start justify-between gap-4">
                             <div className="min-w-0 flex-1">
@@ -862,26 +1000,46 @@ export function KnowledgeAdminPage(_: Props) {
                             </span>
 
                             <div className="flex flex-wrap gap-2">
-                              <button
+                              <motion.button
+                                whileHover={
+                                  shouldReduceMotion
+                                    ? undefined
+                                    : { y: -2, scale: 1.01 }
+                                }
+                                whileTap={
+                                  shouldReduceMotion
+                                    ? undefined
+                                    : { scale: 0.97 }
+                                }
                                 type="button"
                                 onClick={() => handleEditArticle(item)}
                                 className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3.5 py-2 text-xs font-semibold text-[#22264b] transition-colors hover:border-[#9dbf14] hover:bg-[#9dbf14]/10 dark:border-white/10 dark:text-slate-200 dark:hover:bg-[#9dbf14]/10"
                               >
                                 <Pencil size={14} />
                                 Editar
-                              </button>
+                              </motion.button>
 
-                              <button
+                              <motion.button
+                                whileHover={
+                                  shouldReduceMotion
+                                    ? undefined
+                                    : { y: -2, scale: 1.01 }
+                                }
+                                whileTap={
+                                  shouldReduceMotion
+                                    ? undefined
+                                    : { scale: 0.97 }
+                                }
                                 type="button"
                                 onClick={() => handleDeleteArticle(item)}
                                 className="inline-flex items-center gap-2 rounded-xl border border-rose-100 px-3.5 py-2 text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-50 dark:border-rose-400/20 dark:text-rose-400 dark:hover:bg-rose-400/10"
                               >
                                 <Trash2 size={14} />
                                 Eliminar
-                              </button>
+                              </motion.button>
                             </div>
                           </div>
-                        </div>
+                        </motion.div>
                       ))
                     ) : (
                       <div className="rounded-[20px] border border-dashed border-slate-300 p-8 text-center dark:border-white/15">
@@ -905,9 +1063,13 @@ export function KnowledgeAdminPage(_: Props) {
                   <>
                     {categories.length ? (
                       categories.map((item) => (
-                        <div
+                        <motion.div
                           key={item.id}
-                          className="group rounded-[20px] border border-slate-100 bg-white p-5 transition-all duration-300 hover:border-[#9dbf14]/40 hover:shadow-[0_12px_35px_rgba(29,53,87,0.07)] dark:border-white/10 dark:bg-white/[0.03]"
+                          variants={itemVariants}
+                          whileHover={
+                            shouldReduceMotion ? undefined : { y: -4 }
+                          }
+                          className="group rounded-[20px] border border-slate-100 bg-white p-5 transition-all duration-300 hover:border-[#9dbf14]/40 hover:shadow-[0_12px_35px_rgba(29,53,87,0.07)] dark:border-white/10 dark:bg-white/3"
                         >
                           <div className="flex flex-wrap items-center justify-between gap-4">
                             <div className="flex min-w-0 items-center gap-4">
@@ -929,7 +1091,17 @@ export function KnowledgeAdminPage(_: Props) {
                             </div>
 
                             <div className="flex gap-2">
-                              <button
+                              <motion.button
+                                whileHover={
+                                  shouldReduceMotion
+                                    ? undefined
+                                    : { y: -2, scale: 1.01 }
+                                }
+                                whileTap={
+                                  shouldReduceMotion
+                                    ? undefined
+                                    : { scale: 0.97 }
+                                }
                                 type="button"
                                 onClick={() => {
                                   setActiveTab("categories");
@@ -945,19 +1117,29 @@ export function KnowledgeAdminPage(_: Props) {
                               >
                                 <Pencil size={14} />
                                 Editar
-                              </button>
+                              </motion.button>
 
-                              <button
+                              <motion.button
+                                whileHover={
+                                  shouldReduceMotion
+                                    ? undefined
+                                    : { y: -2, scale: 1.01 }
+                                }
+                                whileTap={
+                                  shouldReduceMotion
+                                    ? undefined
+                                    : { scale: 0.97 }
+                                }
                                 type="button"
                                 onClick={() => handleDeleteCategory(item)}
                                 className="inline-flex items-center gap-2 rounded-xl border border-rose-100 px-3.5 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 dark:border-rose-400/20 dark:text-rose-400"
                               >
                                 <Trash2 size={14} />
                                 Eliminar
-                              </button>
+                              </motion.button>
                             </div>
                           </div>
-                        </div>
+                        </motion.div>
                       ))
                     ) : (
                       <div className="rounded-[20px] border border-dashed border-slate-300 p-8 text-center dark:border-white/15">
@@ -981,9 +1163,13 @@ export function KnowledgeAdminPage(_: Props) {
                   <>
                     {events.length ? (
                       events.map((item) => (
-                        <div
+                        <motion.div
                           key={item.id}
-                          className="group rounded-[20px] border border-slate-100 bg-white p-5 transition-all duration-300 hover:border-[#9dbf14]/40 hover:shadow-[0_12px_35px_rgba(29,53,87,0.07)] dark:border-white/10 dark:bg-white/[0.03]"
+                          variants={itemVariants}
+                          whileHover={
+                            shouldReduceMotion ? undefined : { y: -4 }
+                          }
+                          className="group rounded-[20px] border border-slate-100 bg-white p-5 transition-all duration-300 hover:border-[#9dbf14]/40 hover:shadow-[0_12px_35px_rgba(29,53,87,0.07)] dark:border-white/10 dark:bg-white/3"
                         >
                           <div className="mb-3 flex items-center gap-2">
                             <CalendarDays
@@ -1005,7 +1191,15 @@ export function KnowledgeAdminPage(_: Props) {
                           </p>
 
                           <div className="mt-5 flex flex-wrap justify-end gap-2 border-t border-slate-100 pt-4 dark:border-white/10">
-                            <button
+                            <motion.button
+                              whileHover={
+                                shouldReduceMotion
+                                  ? undefined
+                                  : { y: -2, scale: 1.01 }
+                              }
+                              whileTap={
+                                shouldReduceMotion ? undefined : { scale: 0.97 }
+                              }
                               type="button"
                               onClick={() => {
                                 setActiveTab("events");
@@ -1029,18 +1223,26 @@ export function KnowledgeAdminPage(_: Props) {
                             >
                               <Pencil size={14} />
                               Editar
-                            </button>
+                            </motion.button>
 
-                            <button
+                            <motion.button
+                              whileHover={
+                                shouldReduceMotion
+                                  ? undefined
+                                  : { y: -2, scale: 1.01 }
+                              }
+                              whileTap={
+                                shouldReduceMotion ? undefined : { scale: 0.97 }
+                              }
                               type="button"
                               onClick={() => handleDeleteEvent(item)}
                               className="inline-flex items-center gap-2 rounded-xl border border-rose-100 px-3.5 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 dark:border-rose-400/20 dark:text-rose-400"
                             >
                               <Trash2 size={14} />
                               Eliminar
-                            </button>
+                            </motion.button>
                           </div>
-                        </div>
+                        </motion.div>
                       ))
                     ) : (
                       <div className="rounded-[20px] border border-dashed border-slate-300 p-8 text-center dark:border-white/15">
@@ -1061,9 +1263,13 @@ export function KnowledgeAdminPage(_: Props) {
                   <>
                     {calls.length ? (
                       calls.map((item) => (
-                        <div
+                        <motion.div
                           key={item.id}
-                          className="group rounded-[20px] border border-slate-100 bg-white p-5 transition-all duration-300 hover:border-[#9dbf14]/40 hover:shadow-[0_12px_35px_rgba(29,53,87,0.07)] dark:border-white/10 dark:bg-white/[0.03]"
+                          variants={itemVariants}
+                          whileHover={
+                            shouldReduceMotion ? undefined : { y: -4 }
+                          }
+                          className="group rounded-[20px] border border-slate-100 bg-white p-5 transition-all duration-300 hover:border-[#9dbf14]/40 hover:shadow-[0_12px_35px_rgba(29,53,87,0.07)] dark:border-white/10 dark:bg-white/3"
                         >
                           <div className="mb-3 flex items-center gap-2">
                             <Megaphone size={14} className="text-[#79990b]" />
@@ -1081,7 +1287,15 @@ export function KnowledgeAdminPage(_: Props) {
                           </p>
 
                           <div className="mt-5 flex flex-wrap justify-end gap-2 border-t border-slate-100 pt-4 dark:border-white/10">
-                            <button
+                            <motion.button
+                              whileHover={
+                                shouldReduceMotion
+                                  ? undefined
+                                  : { y: -2, scale: 1.01 }
+                              }
+                              whileTap={
+                                shouldReduceMotion ? undefined : { scale: 0.97 }
+                              }
                               type="button"
                               onClick={() => {
                                 setActiveTab("calls");
@@ -1108,18 +1322,26 @@ export function KnowledgeAdminPage(_: Props) {
                             >
                               <Pencil size={14} />
                               Editar
-                            </button>
+                            </motion.button>
 
-                            <button
+                            <motion.button
+                              whileHover={
+                                shouldReduceMotion
+                                  ? undefined
+                                  : { y: -2, scale: 1.01 }
+                              }
+                              whileTap={
+                                shouldReduceMotion ? undefined : { scale: 0.97 }
+                              }
                               type="button"
                               onClick={() => handleDeleteCall(item)}
                               className="inline-flex items-center gap-2 rounded-xl border border-rose-100 px-3.5 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 dark:border-rose-400/20 dark:text-rose-400"
                             >
                               <Trash2 size={14} />
                               Eliminar
-                            </button>
+                            </motion.button>
                           </div>
-                        </div>
+                        </motion.div>
                       ))
                     ) : (
                       <div className="rounded-[20px] border border-dashed border-slate-300 p-8 text-center dark:border-white/15">
@@ -1140,9 +1362,13 @@ export function KnowledgeAdminPage(_: Props) {
                   <>
                     {resources.length ? (
                       resources.map((item) => (
-                        <div
+                        <motion.div
                           key={item.id}
-                          className="group rounded-[20px] border border-slate-100 bg-white p-5 transition-all duration-300 hover:border-[#9dbf14]/40 hover:shadow-[0_12px_35px_rgba(29,53,87,0.07)] dark:border-white/10 dark:bg-white/[0.03]"
+                          variants={itemVariants}
+                          whileHover={
+                            shouldReduceMotion ? undefined : { y: -4 }
+                          }
+                          className="group rounded-[20px] border border-slate-100 bg-white p-5 transition-all duration-300 hover:border-[#9dbf14]/40 hover:shadow-[0_12px_35px_rgba(29,53,87,0.07)] dark:border-white/10 dark:bg-white/3"
                         >
                           <div className="mb-3 flex items-center gap-2">
                             <FileText size={14} className="text-[#79990b]" />
@@ -1160,7 +1386,15 @@ export function KnowledgeAdminPage(_: Props) {
                           </p>
 
                           <div className="mt-5 flex flex-wrap justify-end gap-2 border-t border-slate-100 pt-4 dark:border-white/10">
-                            <button
+                            <motion.button
+                              whileHover={
+                                shouldReduceMotion
+                                  ? undefined
+                                  : { y: -2, scale: 1.01 }
+                              }
+                              whileTap={
+                                shouldReduceMotion ? undefined : { scale: 0.97 }
+                              }
                               type="button"
                               onClick={() => {
                                 setActiveTab("resources");
@@ -1178,18 +1412,26 @@ export function KnowledgeAdminPage(_: Props) {
                             >
                               <Pencil size={14} />
                               Editar
-                            </button>
+                            </motion.button>
 
-                            <button
+                            <motion.button
+                              whileHover={
+                                shouldReduceMotion
+                                  ? undefined
+                                  : { y: -2, scale: 1.01 }
+                              }
+                              whileTap={
+                                shouldReduceMotion ? undefined : { scale: 0.97 }
+                              }
                               type="button"
                               onClick={() => handleDeleteResource(item)}
                               className="inline-flex items-center gap-2 rounded-xl border border-rose-100 px-3.5 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 dark:border-rose-400/20 dark:text-rose-400"
                             >
                               <Trash2 size={14} />
                               Eliminar
-                            </button>
+                            </motion.button>
                           </div>
-                        </div>
+                        </motion.div>
                       ))
                     ) : (
                       <div className="rounded-[20px] border border-dashed border-slate-300 p-8 text-center dark:border-white/15">
@@ -1210,9 +1452,13 @@ export function KnowledgeAdminPage(_: Props) {
                   <>
                     {media.length ? (
                       media.map((item) => (
-                        <div
+                        <motion.div
                           key={item.id}
-                          className="group rounded-[20px] border border-slate-100 bg-white p-5 transition-all duration-300 hover:border-[#9dbf14]/40 hover:shadow-[0_12px_35px_rgba(29,53,87,0.07)] dark:border-white/10 dark:bg-white/[0.03]"
+                          variants={itemVariants}
+                          whileHover={
+                            shouldReduceMotion ? undefined : { y: -4 }
+                          }
+                          className="group rounded-[20px] border border-slate-100 bg-white p-5 transition-all duration-300 hover:border-[#9dbf14]/40 hover:shadow-[0_12px_35px_rgba(29,53,87,0.07)] dark:border-white/10 dark:bg-white/3"
                         >
                           <div className="mb-3 flex items-center gap-2">
                             <Image size={14} className="text-[#79990b]" />
@@ -1230,7 +1476,15 @@ export function KnowledgeAdminPage(_: Props) {
                           </p>
 
                           <div className="mt-5 flex flex-wrap justify-end gap-2 border-t border-slate-100 pt-4 dark:border-white/10">
-                            <button
+                            <motion.button
+                              whileHover={
+                                shouldReduceMotion
+                                  ? undefined
+                                  : { y: -2, scale: 1.01 }
+                              }
+                              whileTap={
+                                shouldReduceMotion ? undefined : { scale: 0.97 }
+                              }
                               type="button"
                               onClick={() => {
                                 setActiveTab("media");
@@ -1247,18 +1501,26 @@ export function KnowledgeAdminPage(_: Props) {
                             >
                               <Pencil size={14} />
                               Editar
-                            </button>
+                            </motion.button>
 
-                            <button
+                            <motion.button
+                              whileHover={
+                                shouldReduceMotion
+                                  ? undefined
+                                  : { y: -2, scale: 1.01 }
+                              }
+                              whileTap={
+                                shouldReduceMotion ? undefined : { scale: 0.97 }
+                              }
                               type="button"
                               onClick={() => handleDeleteMedia(item)}
                               className="inline-flex items-center gap-2 rounded-xl border border-rose-100 px-3.5 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 dark:border-rose-400/20 dark:text-rose-400"
                             >
                               <Trash2 size={14} />
                               Eliminar
-                            </button>
+                            </motion.button>
                           </div>
-                        </div>
+                        </motion.div>
                       ))
                     ) : (
                       <div className="rounded-[20px] border border-dashed border-slate-300 p-8 text-center dark:border-white/15">
@@ -1273,15 +1535,27 @@ export function KnowledgeAdminPage(_: Props) {
                     )}
                   </>
                 )}
-              </section>
+              </motion.section>
 
               {/* FORMULARIOS */}
-              <aside className="relative h-fit overflow-hidden rounded-[26px] border border-white/10 bg-[#22264b] p-5 text-white shadow-[0_20px_50px_rgba(29,53,87,0.18)] dark:bg-[#17243a] sm:p-6 lg:sticky lg:top-6">
+              <motion.aside
+                variants={sectionVariants}
+                className="group relative h-fit overflow-hidden rounded-[26px] border border-white/10 bg-[#22264b] p-5 text-white shadow-[0_20px_50px_rgba(29,53,87,0.18)] dark:bg-[#17243a] sm:p-6 lg:sticky lg:top-6"
+              >
                 <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full border border-[#9dbf14]/20" />
                 <div className="pointer-events-none absolute -right-12 -top-12 h-48 w-48 rounded-full border border-[#9dbf14]/15" />
                 <div className="pointer-events-none absolute bottom-20 -left-20 h-48 w-48 rounded-full border border-white/5" />
 
-                <div className="relative z-10">
+                <motion.div
+                  key={activeTab}
+                  initial={shouldReduceMotion ? false : { opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{
+                    duration: shouldReduceMotion ? 0 : 0.35,
+                    ease: [0.22, 1, 0.36, 1],
+                  }}
+                  className="relative z-10"
+                >
                   <div className="mb-6 flex items-start justify-between gap-3 border-b border-white/10 pb-5">
                     <div>
                       <div className="mb-2 flex items-center gap-2">
@@ -1292,29 +1566,7 @@ export function KnowledgeAdminPage(_: Props) {
                       </div>
 
                       <h3 className="text-xl font-bold tracking-tight sm:text-2xl">
-                        {activeTab === "articles"
-                          ? editingArticleId !== null
-                            ? "Editar artículo"
-                            : "Nuevo artículo"
-                          : activeTab === "categories"
-                            ? editingCategoryId !== null
-                              ? "Editar categoría"
-                              : "Nueva categoría"
-                            : activeTab === "events"
-                              ? editingEventId !== null
-                                ? "Editar evento"
-                                : "Nuevo evento"
-                              : activeTab === "calls"
-                                ? editingCallId !== null
-                                  ? "Editar convocatoria"
-                                  : "Nueva convocatoria"
-                                : activeTab === "resources"
-                                  ? editingResourceId !== null
-                                    ? "Editar recurso"
-                                    : "Nuevo recurso"
-                                  : editingMediaId !== null
-                                    ? "Editar multimedia"
-                                    : "Nueva multimedia"}
+                        {formTitle}
                       </h3>
                     </div>
 
@@ -1326,26 +1578,22 @@ export function KnowledgeAdminPage(_: Props) {
                       (activeTab === "resources" &&
                         editingResourceId !== null) ||
                       (activeTab === "media" && editingMediaId !== null)) && (
-                      <button
-                        type="button"
-                        onClick={
-                          activeTab === "articles"
-                            ? resetArticleForm
-                            : activeTab === "categories"
-                              ? resetCategoryForm
-                              : activeTab === "events"
-                                ? resetEventForm
-                                : activeTab === "calls"
-                                  ? resetCallForm
-                                  : activeTab === "resources"
-                                    ? resetResourceForm
-                                    : resetMediaForm
+                      <motion.button
+                        whileHover={
+                          shouldReduceMotion
+                            ? undefined
+                            : { y: -2, scale: 1.01 }
                         }
+                        whileTap={
+                          shouldReduceMotion ? undefined : { scale: 0.97 }
+                        }
+                        type="button"
+                        onClick={resetActiveForm}
                         className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-white/10 px-3 py-2 text-xs font-semibold text-[#dff090] transition-colors hover:bg-white/10"
                       >
                         <X size={14} />
                         Cancelar
-                      </button>
+                      </motion.button>
                     )}
                   </div>
 
@@ -1358,7 +1606,7 @@ export function KnowledgeAdminPage(_: Props) {
                           handleArticleInput("title", event.target.value)
                         }
                         placeholder="Título del artículo"
-                        className="w-full rounded-xl border border-white/10 bg-white/[0.07] px-4 py-3 text-sm text-white outline-none transition-all placeholder:text-slate-400 focus:border-[#9dbf14] focus:bg-white/[0.10] focus:ring-2 focus:ring-[#9dbf14]/20"
+                        className="w-full rounded-xl border border-white/10 bg-white/[0.07] px-4 py-3 text-sm text-white outline-none transition-all placeholder:text-slate-400 focus:border-[#9dbf14] focus:bg-white/10 focus:ring-2 focus:ring-[#9dbf14]/20"
                       />
 
                       <input
@@ -1390,19 +1638,27 @@ export function KnowledgeAdminPage(_: Props) {
                       />
 
                       <div className="space-y-2">
-                        <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-[#dff090]">
+                        <label
+                          htmlFor="article-category"
+                          className="block text-[10px] font-bold uppercase tracking-[0.15em] text-[#dff090]"
+                        >
                           Categoría del artículo
                         </label>
 
                         {categories.length === 0 ? (
                           <div className="rounded-xl border border-dashed border-[#9dbf14]/40 bg-[#9dbf14]/5 px-4 py-3 text-sm text-[#dff090]">
-                            Aún no hay categorías creadas. Crea una categoría antes de publicar un artículo.
+                            Aún no hay categorías creadas. Crea una categoría
+                            antes de publicar un artículo.
                           </div>
                         ) : (
                           <select
+                            id="article-category"
                             value={articleForm.categoryId}
                             onChange={(event) =>
-                              handleArticleInput("categoryId", event.target.value)
+                              handleArticleInput(
+                                "categoryId",
+                                event.target.value,
+                              )
                             }
                             className="w-full rounded-xl border border-white/10 bg-white/[0.07] px-4 py-3 text-sm text-white outline-none transition-all focus:border-[#9dbf14] focus:ring-2 focus:ring-[#9dbf14]/20"
                           >
@@ -1410,7 +1666,11 @@ export function KnowledgeAdminPage(_: Props) {
                               Selecciona una categoría
                             </option>
                             {categories.map((category) => (
-                              <option key={category.id} value={String(category.id)} className="text-slate-700">
+                              <option
+                                key={category.id}
+                                value={String(category.id)}
+                                className="text-slate-700"
+                              >
                                 {category.name}
                               </option>
                             ))}
@@ -1418,12 +1678,16 @@ export function KnowledgeAdminPage(_: Props) {
                         )}
                       </div>
 
-                      <div className="space-y-2 rounded-xl border border-white/10 bg-white/[0.04] p-3">
-                        <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-[#dff090]">
+                      <div className="space-y-2 rounded-xl border border-white/10 bg-white/4 p-3">
+                        <label
+                          htmlFor="article-cover"
+                          className="block text-[10px] font-bold uppercase tracking-[0.15em] text-[#dff090]"
+                        >
                           Portada o video
                         </label>
 
                         <input
+                          id="article-cover"
                           type="file"
                           accept="image/*,video/*"
                           onChange={handleArticleFileChange}
@@ -1449,7 +1713,15 @@ export function KnowledgeAdminPage(_: Props) {
                         <option value="published">Publicado</option>
                       </select>
 
-                      <button
+                      <motion.button
+                        whileHover={
+                          shouldReduceMotion
+                            ? undefined
+                            : { y: -2, scale: 1.01 }
+                        }
+                        whileTap={
+                          shouldReduceMotion ? undefined : { scale: 0.97 }
+                        }
                         type="button"
                         onClick={handleSaveArticle}
                         disabled={
@@ -1459,17 +1731,13 @@ export function KnowledgeAdminPage(_: Props) {
                         }
                         className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#9dbf14] px-4 py-3 text-sm font-bold text-[#1c2440] shadow-lg shadow-black/10 transition-all hover:bg-[#b0d52a] hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        {submitting ? (
-                          "Guardando..."
-                        ) : (
-                          <>
-                            <Plus size={17} />
-                            {editingArticleId !== null
-                              ? "Actualizar artículo"
-                              : "Guardar artículo"}
-                          </>
+                        {!submitting && <Plus size={17} />}
+                        {getSaveButtonLabel(
+                          submitting,
+                          editingArticleId !== null,
+                          "artículo",
                         )}
-                      </button>
+                      </motion.button>
                     </div>
                   )}
 
@@ -1495,11 +1763,15 @@ export function KnowledgeAdminPage(_: Props) {
                         className="w-full resize-y rounded-xl border border-white/10 bg-white/[0.07] px-4 py-3 text-sm text-white outline-none placeholder:text-slate-400 focus:border-[#9dbf14] focus:ring-2 focus:ring-[#9dbf14]/20"
                       />
 
-                      <div className="space-y-2 rounded-xl border border-white/10 bg-white/[0.04] p-3">
-                        <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-[#dff090]">
+                      <div className="space-y-2 rounded-xl border border-white/10 bg-white/4 p-3">
+                        <label
+                          htmlFor="category-color"
+                          className="block text-[10px] font-bold uppercase tracking-[0.15em] text-[#dff090]"
+                        >
                           Color identificador
                         </label>
                         <input
+                          id="category-color"
                           type="color"
                           value={categoryForm.color}
                           onChange={(event) =>
@@ -1509,12 +1781,16 @@ export function KnowledgeAdminPage(_: Props) {
                         />
                       </div>
 
-                      <div className="space-y-2 rounded-xl border border-white/10 bg-white/[0.04] p-3">
-                        <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-[#dff090]">
+                      <div className="space-y-2 rounded-xl border border-white/10 bg-white/4 p-3">
+                        <label
+                          htmlFor="category-image"
+                          className="block text-[10px] font-bold uppercase tracking-[0.15em] text-[#dff090]"
+                        >
                           Imagen de categoría
                         </label>
 
                         <input
+                          id="category-image"
                           type="file"
                           accept="image/*"
                           onChange={handleCategoryFileChange}
@@ -1537,18 +1813,26 @@ export function KnowledgeAdminPage(_: Props) {
                         className="w-full rounded-xl border border-white/10 bg-white/[0.07] px-4 py-3 text-sm text-white outline-none placeholder:text-slate-400 focus:border-[#9dbf14] focus:ring-2 focus:ring-[#9dbf14]/20"
                       />
 
-                      <button
+                      <motion.button
+                        whileHover={
+                          shouldReduceMotion
+                            ? undefined
+                            : { y: -2, scale: 1.01 }
+                        }
+                        whileTap={
+                          shouldReduceMotion ? undefined : { scale: 0.97 }
+                        }
                         type="button"
                         onClick={handleSaveCategory}
                         disabled={submitting || !categoryForm.name.trim()}
                         className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#9dbf14] px-4 py-3 text-sm font-bold text-[#1c2440] transition-all hover:bg-[#b0d52a] disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        {submitting
-                          ? "Guardando..."
-                          : editingCategoryId !== null
-                            ? "Actualizar categoría"
-                            : "Guardar categoría"}
-                      </button>
+                        {getSaveButtonLabel(
+                          submitting,
+                          editingCategoryId !== null,
+                          "categoría",
+                        )}
+                      </motion.button>
                     </div>
                   )}
 
@@ -1602,12 +1886,16 @@ export function KnowledgeAdminPage(_: Props) {
                         className="w-full rounded-xl border border-white/10 bg-white/[0.07] px-4 py-3 text-sm text-white outline-none placeholder:text-slate-400 focus:border-[#9dbf14] focus:ring-2 focus:ring-[#9dbf14]/20"
                       />
 
-                      <div className="space-y-2 rounded-xl border border-white/10 bg-white/[0.04] p-3">
-                        <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-[#dff090]">
+                      <div className="space-y-2 rounded-xl border border-white/10 bg-white/4 p-3">
+                        <label
+                          htmlFor="event-cover"
+                          className="block text-[10px] font-bold uppercase tracking-[0.15em] text-[#dff090]"
+                        >
                           Portada del evento
                         </label>
 
                         <input
+                          id="event-cover"
                           type="file"
                           accept="image/*,video/*"
                           onChange={handleEventFileChange}
@@ -1653,18 +1941,26 @@ export function KnowledgeAdminPage(_: Props) {
                         className="w-full rounded-xl border border-white/10 bg-white/[0.07] px-4 py-3 text-sm text-white outline-none placeholder:text-slate-400 focus:border-[#9dbf14]"
                       />
 
-                      <button
+                      <motion.button
+                        whileHover={
+                          shouldReduceMotion
+                            ? undefined
+                            : { y: -2, scale: 1.01 }
+                        }
+                        whileTap={
+                          shouldReduceMotion ? undefined : { scale: 0.97 }
+                        }
                         type="button"
                         onClick={handleSaveEvent}
                         disabled={submitting || !eventForm.title.trim()}
                         className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#9dbf14] px-4 py-3 text-sm font-bold text-[#1c2440] transition-all hover:bg-[#b0d52a] disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        {submitting
-                          ? "Guardando..."
-                          : editingEventId !== null
-                            ? "Actualizar evento"
-                            : "Guardar evento"}
-                      </button>
+                        {getSaveButtonLabel(
+                          submitting,
+                          editingEventId !== null,
+                          "evento",
+                        )}
+                      </motion.button>
                     </div>
                   )}
 
@@ -1738,18 +2034,26 @@ export function KnowledgeAdminPage(_: Props) {
                         <option value="closed">Cerrada</option>
                       </select>
 
-                      <button
+                      <motion.button
+                        whileHover={
+                          shouldReduceMotion
+                            ? undefined
+                            : { y: -2, scale: 1.01 }
+                        }
+                        whileTap={
+                          shouldReduceMotion ? undefined : { scale: 0.97 }
+                        }
                         type="button"
                         onClick={handleSaveCall}
                         disabled={submitting || !callForm.title.trim()}
                         className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#9dbf14] px-4 py-3 text-sm font-bold text-[#1c2440] transition-all hover:bg-[#b0d52a] disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        {submitting
-                          ? "Guardando..."
-                          : editingCallId !== null
-                            ? "Actualizar convocatoria"
-                            : "Guardar convocatoria"}
-                      </button>
+                        {getSaveButtonLabel(
+                          submitting,
+                          editingCallId !== null,
+                          "convocatoria",
+                        )}
+                      </motion.button>
                     </div>
                   )}
 
@@ -1788,12 +2092,16 @@ export function KnowledgeAdminPage(_: Props) {
                         <option value="video">Video</option>
                       </select>
 
-                      <div className="space-y-2 rounded-xl border border-white/10 bg-white/[0.04] p-3">
-                        <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-[#dff090]">
+                      <div className="space-y-2 rounded-xl border border-white/10 bg-white/4 p-3">
+                        <label
+                          htmlFor="resource-file"
+                          className="block text-[10px] font-bold uppercase tracking-[0.15em] text-[#dff090]"
+                        >
                           Archivo del recurso
                         </label>
 
                         <input
+                          id="resource-file"
                           type="file"
                           accept="image/*,video/*,.pdf,.doc,.docx"
                           onChange={handleResourceFileChange}
@@ -1836,18 +2144,26 @@ export function KnowledgeAdminPage(_: Props) {
                         <option value="archived">Archivado</option>
                       </select>
 
-                      <button
+                      <motion.button
+                        whileHover={
+                          shouldReduceMotion
+                            ? undefined
+                            : { y: -2, scale: 1.01 }
+                        }
+                        whileTap={
+                          shouldReduceMotion ? undefined : { scale: 0.97 }
+                        }
                         type="button"
                         onClick={handleSaveResource}
                         disabled={submitting || !resourceForm.title.trim()}
                         className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#9dbf14] px-4 py-3 text-sm font-bold text-[#1c2440] transition-all hover:bg-[#b0d52a] disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        {submitting
-                          ? "Guardando..."
-                          : editingResourceId !== null
-                            ? "Actualizar recurso"
-                            : "Guardar recurso"}
-                      </button>
+                        {getSaveButtonLabel(
+                          submitting,
+                          editingResourceId !== null,
+                          "recurso",
+                        )}
+                      </motion.button>
                     </div>
                   )}
 
@@ -1875,12 +2191,16 @@ export function KnowledgeAdminPage(_: Props) {
                         <option value="document">Documento</option>
                       </select>
 
-                      <div className="space-y-2 rounded-xl border border-white/10 bg-white/[0.04] p-3">
-                        <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-[#dff090]">
+                      <div className="space-y-2 rounded-xl border border-white/10 bg-white/4 p-3">
+                        <label
+                          htmlFor="media-file"
+                          className="block text-[10px] font-bold uppercase tracking-[0.15em] text-[#dff090]"
+                        >
                           Archivo multimedia
                         </label>
 
                         <input
+                          id="media-file"
                           type="file"
                           accept="image/*,video/*"
                           onChange={handleMediaFileChange}
@@ -1922,26 +2242,34 @@ export function KnowledgeAdminPage(_: Props) {
                         className="w-full resize-y rounded-xl border border-white/10 bg-white/[0.07] px-4 py-3 text-sm text-white outline-none placeholder:text-slate-400 focus:border-[#9dbf14]"
                       />
 
-                      <button
+                      <motion.button
+                        whileHover={
+                          shouldReduceMotion
+                            ? undefined
+                            : { y: -2, scale: 1.01 }
+                        }
+                        whileTap={
+                          shouldReduceMotion ? undefined : { scale: 0.97 }
+                        }
                         type="button"
                         onClick={handleSaveMedia}
                         disabled={submitting || !mediaForm.title.trim()}
                         className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#9dbf14] px-4 py-3 text-sm font-bold text-[#1c2440] transition-all hover:bg-[#b0d52a] disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        {submitting
-                          ? "Guardando..."
-                          : editingMediaId !== null
-                            ? "Actualizar multimedia"
-                            : "Guardar multimedia"}
-                      </button>
+                        {getSaveButtonLabel(
+                          submitting,
+                          editingMediaId !== null,
+                          "multimedia",
+                        )}
+                      </motion.button>
                     </div>
                   )}
-                </div>
-              </aside>
-            </div>
+                </motion.div>
+              </motion.aside>
+            </motion.div>
           )}
-        </section>
-      </div>
-    </div>
+        </motion.section>
+      </motion.div>
+    </motion.div>
   );
 }
